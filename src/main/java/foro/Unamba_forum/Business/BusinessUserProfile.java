@@ -53,11 +53,13 @@ public class BusinessUserProfile {
         }
 
         // Obtener la carrera por ID y establecerla en el perfil
-        Optional<TCareer> carrera = repoCareer.findById(dtoUserProfile.getIdCarrera());
-        if (carrera.isPresent()) {
-            tUserProfile.setCarrera(carrera.get());
-        } else {
-            throw new RuntimeException("Carrera no encontrada");
+        if (dtoUserProfile.getIdCarrera() != null) {
+            Optional<TCareer> carrera = repoCareer.findById(dtoUserProfile.getIdCarrera());
+            if (carrera.isPresent()) {
+                tUserProfile.setCarrera(carrera.get());
+            } else {
+                throw new RuntimeException("Carrera no encontrada");
+            }
         }
 
         repoUserProfile.save(tUserProfile);
@@ -77,8 +79,10 @@ public class BusinessUserProfile {
             dtoUserProfile.setGenero(profile.getGenero());
             dtoUserProfile.setFechaActualizacion(profile.getFechaActualizacion());
             // Asignar las relaciones
-            // dtoUserProfile.setIdUsuario(profile.getUsuario().getIdUsuario());
-            // dtoUserProfile.setIdCarrera(profile.getCarrera().getIdCarrera());
+            dtoUserProfile.setIdUsuario(profile.getUsuario().getIdUsuario());
+            if (profile.getCarrera() != null) {
+                dtoUserProfile.setIdCarrera(profile.getCarrera().getIdCarrera());
+            }
 
             return dtoUserProfile;
         }
@@ -97,9 +101,26 @@ public class BusinessUserProfile {
             profile.setFechaNacimiento(dtoUserProfile.getFechaNacimiento());
             profile.setGenero(dtoUserProfile.getGenero());
             profile.setFechaActualizacion(dtoUserProfile.getFechaActualizacion());
-            // Asignar las relaciones
-            // profile.setUsuario(...);
-            // profile.setCarrera(...);
+            
+            // Obtener el usuario por ID y establecerlo en el perfil
+            Optional<TUser> usuario = repoUser.findById(dtoUserProfile.getIdUsuario());
+            if (usuario.isPresent()) {
+                profile.setUsuario(usuario.get());
+            } else {
+                throw new RuntimeException("Usuario no encontrado");
+            }
+
+            // Obtener la carrera por ID y establecerla en el perfil
+            if (dtoUserProfile.getIdCarrera() != null) {
+                Optional<TCareer> carrera = repoCareer.findById(dtoUserProfile.getIdCarrera());
+                if (carrera.isPresent()) {
+                    profile.setCarrera(carrera.get());
+                } else {
+                    throw new RuntimeException("Carrera no encontrada");
+                }
+            } else {
+                profile.setCarrera(null);
+            }
 
             repoUserProfile.save(profile);
         }
