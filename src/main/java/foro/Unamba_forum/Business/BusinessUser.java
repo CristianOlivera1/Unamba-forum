@@ -111,7 +111,7 @@ public class BusinessUser {
     }
 
     @Transactional
-    public boolean update(DtoUser dtoUser) {
+    public boolean update(DtoUser dtoUser)throws Exception  {
         Optional<TUser> tUsers = repoUser.findById(dtoUser.getIdUsuario());
 
         if (!tUsers.isPresent()) {
@@ -120,7 +120,7 @@ public class BusinessUser {
 
         TUser tUser = tUsers.get();
         tUser.setEmail(dtoUser.getEmail());
-        tUser.setContrasenha(dtoUser.getContrasenha());
+        tUser.setContrasenha(AesUtil.encrypt(dtoUser.getContrasenha()));
         tUser.setFechaActualizacion(new Timestamp(new Date().getTime()));
 
         repoUser.save(tUser);

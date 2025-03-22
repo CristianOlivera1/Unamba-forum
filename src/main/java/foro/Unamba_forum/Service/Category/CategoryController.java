@@ -27,6 +27,8 @@ public class CategoryController {
             List<DtoCategory> listDtoCategory = businessCategory.getAllCategorias();
             response.setData(listDtoCategory);
             response.setType("success");
+            response.setListMessage(List.of("Datos obtenidos correctamente."));
+
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Ocurrió un error inesperado."));

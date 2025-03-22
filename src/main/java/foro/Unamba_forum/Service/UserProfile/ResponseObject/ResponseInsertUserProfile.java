@@ -1,5 +1,5 @@
 package foro.Unamba_forum.Service.UserProfile.ResponseObject;
 
-public class ResponseInsertUserProfile {
-    
-}
+import foro.Unamba_forum.Service.Generic.ResponseGeneric;
+
+public class ResponseInsertUserProfile extends ResponseGeneric<Void> {}

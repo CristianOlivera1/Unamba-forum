@@ -140,6 +140,8 @@ public class UserController {
             List<DtoUser> listDtoUser = businessUser.getAll();
             response.setData(listDtoUser);
             response.setType("success");
+            response.setListMessage(List.of("Datos obtenidos correctamente."));
+
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Ocurrió un error inesperado."));

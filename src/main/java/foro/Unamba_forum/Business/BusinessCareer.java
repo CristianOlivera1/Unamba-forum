@@ -16,7 +16,7 @@ public class BusinessCareer {
     private RepoCareer schoolRepository;
     
     //Get all careers
-    public List<DtoCareer> getAllCarreras() {
+    public List<DtoCareer> getAllCareer() {
         return schoolRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
