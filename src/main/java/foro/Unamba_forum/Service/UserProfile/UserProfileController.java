@@ -43,6 +43,7 @@ public class UserProfileController {
             dtoUserProfile.setIdCarrera(request.getIdCarrera());
             dtoUserProfile.setNombre(request.getNombre());
             dtoUserProfile.setApellidos(request.getApellidos());
+            dtoUserProfile.setDescripcion(request.getDescripcion());
             dtoUserProfile.setFechaNacimiento(request.getFechaNacimiento());
             dtoUserProfile.setGenero(request.getGenero());
             dtoUserProfile.setFotoPerfil(fotoPerfil != null ? fotoPerfil.getOriginalFilename() : null);
@@ -138,6 +139,7 @@ public class UserProfileController {
             dtoUserProfile.setIdCarrera(request.getIdCarrera());
             dtoUserProfile.setNombre(request.getNombre());
             dtoUserProfile.setApellidos(request.getApellidos());
+            dtoUserProfile.setDescripcion(request.getDescripcion());
             dtoUserProfile.setFotoPerfil(fotoPerfil != null ? fotoPerfil.getOriginalFilename() : null);
             dtoUserProfile.setFotoPortada(fotoPortada != null ? fotoPortada.getOriginalFilename() : null);
             dtoUserProfile.setFechaNacimiento(request.getFechaNacimiento());

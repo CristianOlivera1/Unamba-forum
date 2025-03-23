@@ -22,7 +22,7 @@ public class RequestInsertUserProfile {
 
     @NotBlank(message = "El campo \"Apellidos \" es requerido")
     private String apellidos;
-
+    private String descripcion;
      private MultipartFile fotoPerfil;
     private MultipartFile fotoPortada;
 

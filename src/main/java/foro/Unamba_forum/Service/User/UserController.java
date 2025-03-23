@@ -29,38 +29,39 @@ import foro.Unamba_forum.Service.User.ResponseObject.ResponseUpdate;
 
 @RequestMapping("/user")
 public class UserController {
+  
     @Autowired
     private BusinessUser businessUser;
 
-        @PostMapping("/insert")
-        public ResponseEntity<ResponseGeneric<DtoUser>> insert(@RequestParam String email, @RequestParam String contrasenha) {
-            ResponseGeneric<DtoUser> response = new ResponseGeneric<>();
-            try {
-                if (businessUser.emailExists(email)) {
-                    response.setType("error");
-                    response.setListMessage(List.of("El nombre de usuario ya existe"));
-                    return new ResponseEntity<>(response, HttpStatus.OK);
-                }
-
-                DtoUser dtoUser = new DtoUser();
-                dtoUser.setEmail(email);
-                dtoUser.setContrasenha(contrasenha);
-
-                businessUser.insert(dtoUser);
-
-                response.setType("success");
-                response.setListMessage(List.of("Registro realizado correctamente"));
-                response.setData(dtoUser);
-
-                return new ResponseEntity<>(response, HttpStatus.CREATED);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                response.setType("exception");
-                response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
-                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    @PostMapping("/insert")
+    public ResponseEntity<ResponseGeneric<DtoUser>> insert(@RequestParam String email, @RequestParam String contrasenha) {
+        ResponseGeneric<DtoUser> response = new ResponseGeneric<>();
+        try {
+            if (businessUser.emailExists(email)) {
+                response.setType("error");
+                response.setListMessage(List.of("El nombre de usuario ya existe"));
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
+
+            DtoUser dtoUser = new DtoUser();
+            dtoUser.setEmail(email);
+            dtoUser.setContrasenha(contrasenha);
+
+            businessUser.insert(dtoUser);
+
+            response.setType("success");
+            response.setListMessage(List.of("Registro realizado correctamente"));
+            response.setData(dtoUser);
+
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setType("exception");
+            response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
 
     @PostMapping("/login")
     public ResponseEntity<ResponseGeneric<DtoUser>> login(@RequestParam String email, @RequestParam String contrasenha) {
@@ -70,11 +71,7 @@ public class UserController {
 
             if (dtoUser == null) {
                 response.setType("error");
-                if (!businessUser.emailExists(email)) {
-                    response.setListMessage(List.of("Usuario incorrecto"));
-                } else {
-                    response.setListMessage(List.of("Contraseña incorrecta"));
-                }
+                response.setListMessage(List.of(businessUser.emailExists(email) ? "Contraseña incorrecta" : "Usuario incorrecto"));
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
 
@@ -160,8 +157,8 @@ public class UserController {
 
         try {
             DtoUser dtoUser = new DtoUser();
-
             dtoUser.setIdUsuario(requestUpdate.getIdUsuario());
+
             DtoUser existingUser = businessUser.getUserById(requestUpdate.getIdUsuario());
             if (existingUser != null && !existingUser.getEmail().equals(requestUpdate.getEmail()) && businessUser.emailExists(requestUpdate.getEmail())) {
                 responseUpdate.setType("error");
@@ -173,7 +170,7 @@ public class UserController {
             dtoUser.setEmail(requestUpdate.getEmail());
             dtoUser.setContrasenha(requestUpdate.getContrasenha());
             dtoUser.setFechaRegistro(existingUser.getFechaRegistro());
-            dtoUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis())); 
+            dtoUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
             boolean updated = businessUser.update(dtoUser);
 
             if (!updated) {
@@ -199,9 +196,9 @@ public class UserController {
         ResponseGeneric<DtoRegisterUser> responseRegister = new ResponseGeneric<>();
         try {
             if (businessUser.emailExists(dto.getEmail())) {
-            responseRegister.setType("error");
-            responseRegister.setListMessage(List.of("El email de usuario ya existe"));
-            return new ResponseEntity<>(responseRegister, HttpStatus.OK);
+                responseRegister.setType("error");
+                responseRegister.setListMessage(List.of("El email de usuario ya existe"));
+                return new ResponseEntity<>(responseRegister, HttpStatus.OK);
             }
             businessUser.registrarUsuario(dto);
             responseRegister.setType("success");

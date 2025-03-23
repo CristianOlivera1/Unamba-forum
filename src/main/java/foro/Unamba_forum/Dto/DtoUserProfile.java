@@ -14,6 +14,7 @@ public class DtoUserProfile {
     private String idCarrera;
     private String nombre;
     private String apellidos;
+    private String descripcion;
     private String fotoPerfil;
     private String fotoPortada;
     private Date fechaNacimiento;

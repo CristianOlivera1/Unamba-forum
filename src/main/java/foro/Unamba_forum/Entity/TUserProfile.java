@@ -36,6 +36,9 @@ public class TUserProfile implements Serializable{
     @Column(name = "apellidos")
     private String apellidos;
 
+    @Column(name = "descripcion", columnDefinition = "TEXT")
+    private String descripcion;    
+
     @Column(name = "fotoPerfil")
     private String fotoPerfil;
 
