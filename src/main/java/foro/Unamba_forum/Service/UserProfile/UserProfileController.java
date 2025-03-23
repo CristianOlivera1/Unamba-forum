@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,15 +28,14 @@ import foro.Unamba_forum.Service.UserProfile.ResponseObject.ResponseUpdateUserPr
 
 @RequestMapping("/userprofile")
 public class UserProfileController {
-   @Autowired
+    @Autowired
     private BusinessUserProfile businessUserProfile;
 
     @PostMapping(path = "/insert", consumes = { "multipart/form-data" })
     public ResponseEntity<ResponseInsertUserProfile> insert(
-        @ModelAttribute RequestInsertUserProfile request,
-        @RequestParam("fotoPerfil") MultipartFile fotoPerfil,
-        @RequestParam("fotoPortada") MultipartFile fotoPortada
-    ) {
+            @ModelAttribute RequestInsertUserProfile request,
+            @RequestParam(value = "fotoPerfil", required = false) MultipartFile fotoPerfil,
+            @RequestParam(value = "fotoPortada", required = false) MultipartFile fotoPortada) {
         ResponseInsertUserProfile response = new ResponseInsertUserProfile();
         try {
             DtoUserProfile dtoUserProfile = new DtoUserProfile();
@@ -47,12 +45,14 @@ public class UserProfileController {
             dtoUserProfile.setApellidos(request.getApellidos());
             dtoUserProfile.setFechaNacimiento(request.getFechaNacimiento());
             dtoUserProfile.setGenero(request.getGenero());
-    
-            // Llamar al servicio para manejar datos e imágenes
+            dtoUserProfile.setFotoPerfil(fotoPerfil != null ? fotoPerfil.getOriginalFilename() : null);
+            dtoUserProfile.setFotoPortada(fotoPortada != null ? fotoPortada.getOriginalFilename() : null);
+
             businessUserProfile.insert(dtoUserProfile, fotoPerfil, fotoPortada);
-    
+
             response.setType("success");
             response.setListMessage(List.of("Perfil de usuario creado correctamente"));
+            response.setData(dtoUserProfile);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (Exception e) {
             response.setType("error");
@@ -60,7 +60,7 @@ public class UserProfileController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     @GetMapping("/getall")
     public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getAll() {
         ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
@@ -78,14 +78,37 @@ public class UserProfileController {
         }
     }
 
-    @GetMapping("/get/{idPerfil}")
+    @GetMapping("/getprofilebyuser/{idUsuario}")
+    public ResponseEntity<ResponseGeneric<DtoUserProfile>> getByIdUsuario(@PathVariable String idUsuario) {
+        ResponseGeneric<DtoUserProfile> response = new ResponseGeneric<>();
+        try {
+            DtoUserProfile dtoUserProfile = businessUserProfile.getByIdUsuario(idUsuario);
+            if (dtoUserProfile != null) {
+                response.setType("success");
+                response.setListMessage(List.of("Perfil de usuario obtenido correctamente: " + dtoUserProfile.getNombre()));
+                response.setData(dtoUserProfile);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                response.setType("error");
+                response.setListMessage(List.of("Perfil de usuario no encontrado"));
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener el perfil de usuario: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/getprofilebyprofile/{idPerfil}")
     public ResponseEntity<ResponseGeneric<DtoUserProfile>> getById(@PathVariable String idPerfil) {
         ResponseGeneric<DtoUserProfile> response = new ResponseGeneric<>();
         try {
             DtoUserProfile dtoUserProfile = businessUserProfile.getById(idPerfil);
             if (dtoUserProfile != null) {
                 response.setType("success");
-                response.setListMessage(List.of("Perfil de usuario obtenido correctamente: " + dtoUserProfile.getNombre()));
+                response.setListMessage(
+                        List.of("Perfil de usuario obtenido correctamente: " + dtoUserProfile.getNombre()));
                 response.setData(dtoUserProfile);
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
@@ -105,9 +128,9 @@ public class UserProfileController {
             @ModelAttribute RequestUpdateUserProfile request,
             @RequestParam(value = "fotoPerfil", required = false) MultipartFile fotoPerfil,
             @RequestParam(value = "fotoPortada", required = false) MultipartFile fotoPortada) {
-    
+
         ResponseUpdateUserProfile response = new ResponseUpdateUserProfile();
-    
+
         try {
             DtoUserProfile dtoUserProfile = new DtoUserProfile();
             dtoUserProfile.setIdPerfil(request.getIdPerfil());
@@ -115,14 +138,17 @@ public class UserProfileController {
             dtoUserProfile.setIdCarrera(request.getIdCarrera());
             dtoUserProfile.setNombre(request.getNombre());
             dtoUserProfile.setApellidos(request.getApellidos());
+            dtoUserProfile.setFotoPerfil(fotoPerfil != null ? fotoPerfil.getOriginalFilename() : null);
+            dtoUserProfile.setFotoPortada(fotoPortada != null ? fotoPortada.getOriginalFilename() : null);
             dtoUserProfile.setFechaNacimiento(request.getFechaNacimiento());
             dtoUserProfile.setGenero(request.getGenero());
-    
+            dtoUserProfile.setFechaActualizacion(request.getFechaActualizacion());
+
             businessUserProfile.update(dtoUserProfile, fotoPerfil, fotoPortada);
-    
+
             response.setType("success");
             response.setListMessage(List.of("Perfil de usuario actualizado correctamente"));
-    
+            response.setData(dtoUserProfile);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             response.setType("error");
@@ -130,7 +156,6 @@ public class UserProfileController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
 
     @DeleteMapping("/delete/{idPerfil}")
     public ResponseEntity<ResponseGeneric<String>> delete(@PathVariable String idPerfil) {

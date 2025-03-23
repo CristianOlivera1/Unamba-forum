@@ -1,5 +1,6 @@
 package foro.Unamba_forum.Service.User;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessUser;
+import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.User.RequestsObject.RequestUpdate;
@@ -31,8 +33,8 @@ public class UserController {
     private BusinessUser businessUser;
 
         @PostMapping("/insert")
-        public ResponseEntity<ResponseGeneric<String>> insert(@RequestParam String email, @RequestParam String contrasenha) {
-            ResponseGeneric<String> response = new ResponseGeneric<>();
+        public ResponseEntity<ResponseGeneric<DtoUser>> insert(@RequestParam String email, @RequestParam String contrasenha) {
+            ResponseGeneric<DtoUser> response = new ResponseGeneric<>();
             try {
                 if (businessUser.emailExists(email)) {
                     response.setType("error");
@@ -48,6 +50,8 @@ public class UserController {
 
                 response.setType("success");
                 response.setListMessage(List.of("Registro realizado correctamente"));
+                response.setData(dtoUser);
+
                 return new ResponseEntity<>(response, HttpStatus.CREATED);
 
             } catch (Exception e) {
@@ -158,8 +162,18 @@ public class UserController {
             DtoUser dtoUser = new DtoUser();
 
             dtoUser.setIdUsuario(requestUpdate.getIdUsuario());
+            DtoUser existingUser = businessUser.getUserById(requestUpdate.getIdUsuario());
+            if (existingUser != null && !existingUser.getEmail().equals(requestUpdate.getEmail()) && businessUser.emailExists(requestUpdate.getEmail())) {
+                responseUpdate.setType("error");
+                responseUpdate.setListMessage(List.of("El email de usuario ya existe"));
+                return new ResponseEntity<>(responseUpdate, HttpStatus.OK);
+            }
+
+            // Establecer nuevos valores en el DTO
             dtoUser.setEmail(requestUpdate.getEmail());
             dtoUser.setContrasenha(requestUpdate.getContrasenha());
+            dtoUser.setFechaRegistro(existingUser.getFechaRegistro());
+            dtoUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis())); 
             boolean updated = businessUser.update(dtoUser);
 
             if (!updated) {
@@ -170,12 +184,34 @@ public class UserController {
 
             responseUpdate.setType("success");
             responseUpdate.setListMessage(List.of("El registro se actualizó correctamente."));
+            responseUpdate.setData(dtoUser);
             return new ResponseEntity<>(responseUpdate, HttpStatus.OK);
 
         } catch (Exception e) {
             responseUpdate.setType("exception");
             responseUpdate.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para solucionarlo."));
             return new ResponseEntity<>(responseUpdate, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(path = "/register", consumes = { "multipart/form-data" })
+    public ResponseEntity<ResponseGeneric<DtoRegisterUser>> registrarUsuario(@ModelAttribute DtoRegisterUser dto) {
+        ResponseGeneric<DtoRegisterUser> responseRegister = new ResponseGeneric<>();
+        try {
+            if (businessUser.emailExists(dto.getEmail())) {
+            responseRegister.setType("error");
+            responseRegister.setListMessage(List.of("El email de usuario ya existe"));
+            return new ResponseEntity<>(responseRegister, HttpStatus.OK);
+            }
+            businessUser.registrarUsuario(dto);
+            responseRegister.setType("success");
+            responseRegister.setListMessage(List.of("El registro se realizó correctamente."));
+            responseRegister.setData(dto);
+            return new ResponseEntity<>(responseRegister, HttpStatus.OK);
+        } catch (Exception e) {
+            responseRegister.setType("exception");
+            responseRegister.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para solucionarlo."));
+            return new ResponseEntity<>(responseRegister, HttpStatus.BAD_REQUEST);
         }
     }
 
