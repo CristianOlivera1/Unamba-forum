@@ -213,8 +213,8 @@ public class UserController {
     }
 
     @DeleteMapping("/delete/{idUsuario}")
-    public ResponseEntity<ResponseDelete> delete(@PathVariable String idUsuario) {
-        ResponseDelete response = new ResponseDelete();
+    public ResponseEntity<ResponseGeneric<String>> delete(@PathVariable String idUsuario) {
+   ResponseGeneric<String> response = new ResponseGeneric<>();
         try {
             boolean deleted = businessUser.delete(idUsuario);
             if (!deleted) {
