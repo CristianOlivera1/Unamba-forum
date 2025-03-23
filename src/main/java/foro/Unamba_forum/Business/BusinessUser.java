@@ -5,29 +5,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
+import foro.Unamba_forum.Entity.TCareer;
+
 import foro.Unamba_forum.Entity.TUser;
+import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.AesUtil;
 import foro.Unamba_forum.Helper.JwtUtil;
+import foro.Unamba_forum.Helper.Validation;
+import foro.Unamba_forum.Repository.RepoCareer;
 import foro.Unamba_forum.Repository.RepoUser;
+import foro.Unamba_forum.Repository.RepoUserProfile;
 import jakarta.transaction.Transactional;
-
 
 @Service
 public class BusinessUser {
     @Autowired
     private RepoUser repoUser;
+    @Autowired
+    private RepoUserProfile repoUserProfile;
+    @Autowired
+    private RepoCareer repoCareer;
+    @Autowired
+    private SupabaseStorageService supabaseStorageService;
 
     @Transactional
     public void insert(DtoUser dtoUser) throws Exception {
         dtoUser.setIdUsuario(UUID.randomUUID().toString());
-        dtoUser.setFechaRegistro(new Timestamp(new Date().getTime()));
-        dtoUser.setFechaActualizacion(new Timestamp(new Date().getTime()));
+        dtoUser.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
+        dtoUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
         TUser tUser = new TUser();
         tUser.setIdUsuario(dtoUser.getIdUsuario());
@@ -72,6 +88,59 @@ public class BusinessUser {
         return dtoUser;
     }
 
+    @Transactional
+    public void registrarUsuario(DtoRegisterUser dto) throws Exception {
+        // Crear el usuario
+        TUser usuario = new TUser();
+        usuario.setIdUsuario(UUID.randomUUID().toString());
+        usuario.setEmail(dto.getEmail());
+        String contrasenhaEncriptada = AesUtil.encrypt(dto.getContrasenha());
+        usuario.setContrasenha(contrasenhaEncriptada);
+        usuario.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
+
+        repoUser.save(usuario);
+
+        dto.setIdUsuario(usuario.getIdUsuario());
+        dto.setFechaRegistro(usuario.getFechaRegistro().toString());
+        dto.setContrasenha(contrasenhaEncriptada);
+        TUserProfile perfil = new TUserProfile();
+        perfil.setIdPerfil(UUID.randomUUID().toString());
+        perfil.setIdUsuario(usuario);
+
+        TCareer carrera = dto.getIdCarrera() != null ? repoCareer.findById(dto.getIdCarrera()).orElse(null) : null;
+        perfil.setIdCarrera(carrera);
+
+        perfil.setNombre(dto.getNombre());
+        perfil.setApellidos(dto.getApellidos());
+        perfil.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+
+        String[] nombres = dto.getNombre().split(" ");
+        String[] apellidos = dto.getApellidos().split(" ");
+        String nombre = nombres.length > 0 ? nombres[0] : "";
+        String apellido = apellidos.length > 0 ? apellidos[0] : "";
+        String avatarUrl = "https://ui-avatars.com/api/?name="
+                + URLEncoder.encode(nombre + " " + apellido, StandardCharsets.UTF_8) + "&background=random";
+
+        byte[] imagenBytes = Validation.descargarImagen(avatarUrl);
+
+        String nombreCarrera = (carrera != null) ? Validation.normalizarNombreCarrera(carrera.getNombre())
+                : "sin_carrera";
+        //subir foto perfil
+        String perfilPath = nombreCarrera + "/perfil/" + usuario.getIdUsuario() + "_avatar.png";
+
+        String perfilUrl = supabaseStorageService.uploadFileUrl(imagenBytes, perfilPath, "image/png");
+        perfil.setFotoPerfil(perfilUrl);
+
+        //subir foto portada
+        String coverPath = nombreCarrera + "/portada/" + usuario.getIdUsuario() +"default_cover.webp";
+        byte[] coverImageBytes = Files.readAllBytes(Paths.get("src/main/resources/static/images/default_cover.webp"));
+
+        String coverUrl = supabaseStorageService.uploadFileUrl(coverImageBytes, coverPath, "image/webp");
+        perfil.setFotoPortada(coverUrl);
+
+        repoUserProfile.save(perfil);
+    }
+
     public DtoUser getUserById(String idUsuario) {
         Optional<TUser> tUser = repoUser.findById(idUsuario);
 
@@ -111,7 +180,7 @@ public class BusinessUser {
     }
 
     @Transactional
-    public boolean update(DtoUser dtoUser)throws Exception  {
+    public boolean update(DtoUser dtoUser) throws Exception {
         Optional<TUser> tUsers = repoUser.findById(dtoUser.getIdUsuario());
 
         if (!tUsers.isPresent()) {
@@ -120,11 +189,15 @@ public class BusinessUser {
 
         TUser tUser = tUsers.get();
         tUser.setEmail(dtoUser.getEmail());
-        tUser.setContrasenha(AesUtil.encrypt(dtoUser.getContrasenha()));
-        tUser.setFechaActualizacion(new Timestamp(new Date().getTime()));
+        String contrasenhaEncriptada = AesUtil.encrypt(dtoUser.getContrasenha());
+        tUser.setContrasenha(contrasenhaEncriptada);
+        tUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
         repoUser.save(tUser);
 
+        dtoUser.setContrasenha(contrasenhaEncriptada);
+        dtoUser.setFechaRegistro(tUser.getFechaRegistro());
+        dtoUser.setFechaActualizacion(tUser.getFechaActualizacion());
         return true;
     }
 
