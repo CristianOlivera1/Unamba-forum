@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import foro.Unamba_forum.Business.BusinessUser;
 import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
+import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.User.RequestsObject.RequestUpdate;
 import foro.Unamba_forum.Service.User.ResponseObject.ResponseDelete;
@@ -225,6 +226,23 @@ public class UserController {
         } catch (Exception e) {
             response.setType("exception");
             response.setListMessage(List.of("Ocurrió un error inesperado."));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //Sugerencias de usuarios 5
+      @GetMapping("/suggestions")
+    public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getSuggestions() {
+        ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
+        try {
+            List<DtoUserProfile> suggestions = businessUser.getRandomUsers(5);
+            response.setType("success");
+            response.setData(suggestions);
+            response.setListMessage(List.of("Sugerencias de usuarios obtenidas correctamente"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener sugerencias de usuarios: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
