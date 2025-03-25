@@ -212,6 +212,23 @@ public class UserController {
         }
     }
 
+    //Total de usuarios registrados
+    @GetMapping("/total")
+    public ResponseEntity<ResponseGeneric<Long>> getTotalUsers() {
+        ResponseGeneric<Long> response = new ResponseGeneric<>();
+        try {
+            long totalUsers = businessUser.getTotalUsers();
+            response.setType("success");
+            response.setData(totalUsers);
+            response.setListMessage(List.of("Total de usuarios obtenidos correctamente."));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("exception");
+            response.setListMessage(List.of("Ocurrió un error inesperado."));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @DeleteMapping("/delete/{idUsuario}")
     public ResponseEntity<ResponseGeneric<String>> delete(@PathVariable String idUsuario) {
    ResponseGeneric<String> response = new ResponseGeneric<>();

@@ -11,7 +11,10 @@ import java.nio.file.Paths;
 import java.sql.Timestamp;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
@@ -29,7 +32,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BusinessUser {
-    
+
     @Autowired
     private RepoUser repoUser;
 
@@ -99,6 +102,7 @@ public class BusinessUser {
         repoUser.save(usuario);
         dto.setIdUsuario(usuario.getIdUsuario());
         dto.setFechaRegistro(usuario.getFechaRegistro().toString());
+        dto.setContrasenha(contrasenhaEncriptada);
         // Crear el perfil de usuario
         TUserProfile perfil = new TUserProfile();
         perfil.setIdPerfil(UUID.randomUUID().toString());
@@ -119,6 +123,11 @@ public class BusinessUser {
         perfil.setFotoPortada(coverUrl);
 
         repoUserProfile.save(perfil);
+    }
+
+    // Total de usuarios registrados
+    public long getTotalUsers() {
+        return repoUser.count();
     }
 
     private String subirFotoPerfil(DtoRegisterUser dto, TUser usuario, TCareer carrera) throws Exception {
@@ -193,15 +202,20 @@ public class BusinessUser {
 
         TUser tUser = tUsers.get();
         tUser.setEmail(dtoUser.getEmail());
-        String contrasenhaEncriptada = AesUtil.encrypt(dtoUser.getContrasenha());
-        tUser.setContrasenha(contrasenhaEncriptada);
+        if (dtoUser.getContrasenha() != null && !dtoUser.getContrasenha().isEmpty()) {
+            String contrasenhaEncriptada = AesUtil.encrypt(dtoUser.getContrasenha());
+            tUser.setContrasenha(contrasenhaEncriptada);
+        }
         tUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
         repoUser.save(tUser);
 
-        dtoUser.setContrasenha(contrasenhaEncriptada);
         dtoUser.setFechaRegistro(tUser.getFechaRegistro());
         dtoUser.setFechaActualizacion(tUser.getFechaActualizacion());
+
+        if (dtoUser.getContrasenha() == null || dtoUser.getContrasenha().isEmpty()) {
+            dtoUser.setContrasenha(tUser.getContrasenha());
+        }
         return true;
     }
 

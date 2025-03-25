@@ -29,4 +29,8 @@ public class BusinessCareer {
         dto.setFechaRegistro(carrera.getFechaRegistro());
         return dto;
     }
+    // total de carreras
+    public long getTotalCareers() {
+        return schoolRepository.count();
+    }
 }
