@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
+import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TCareer;
 
 import foro.Unamba_forum.Entity.TUser;
@@ -202,9 +204,13 @@ public class BusinessUser {
 
         TUser tUser = tUsers.get();
         tUser.setEmail(dtoUser.getEmail());
+        // Verificar si se proporciona una nueva contraseña
         if (dtoUser.getContrasenha() != null && !dtoUser.getContrasenha().isEmpty()) {
             String contrasenhaEncriptada = AesUtil.encrypt(dtoUser.getContrasenha());
             tUser.setContrasenha(contrasenhaEncriptada);
+            dtoUser.setContrasenha(contrasenhaEncriptada);
+        } else {
+            dtoUser.setContrasenha(tUser.getContrasenha());
         }
         tUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
@@ -212,11 +218,29 @@ public class BusinessUser {
 
         dtoUser.setFechaRegistro(tUser.getFechaRegistro());
         dtoUser.setFechaActualizacion(tUser.getFechaActualizacion());
-
-        if (dtoUser.getContrasenha() == null || dtoUser.getContrasenha().isEmpty()) {
-            dtoUser.setContrasenha(tUser.getContrasenha());
-        }
         return true;
+    }
+
+     // Obtener 5 usuarios aleatorios
+    public List<DtoUserProfile> getRandomUsers(int count) {
+        List<TUserProfile> profiles = repoUserProfile.findRandomUsers(count);
+        return profiles.stream().map(this::convertToDtoUserProfile).collect(Collectors.toList());
+    }
+
+    private DtoUserProfile convertToDtoUserProfile(TUserProfile profile) {
+        DtoUserProfile dto = new DtoUserProfile();
+        dto.setIdPerfil(profile.getIdPerfil());
+        dto.setIdUsuario(profile.getIdUsuario().getIdUsuario());
+        dto.setIdCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getIdCarrera() : null);
+        dto.setNombre(profile.getNombre());
+        dto.setApellidos(profile.getApellidos());
+        dto.setDescripcion(profile.getDescripcion());
+        dto.setFotoPerfil(profile.getFotoPerfil());
+        dto.setFotoPortada(profile.getFotoPortada());
+        dto.setFechaNacimiento(profile.getFechaNacimiento());
+        dto.setGenero(profile.getGenero());
+        dto.setFechaActualizacion(profile.getFechaActualizacion());
+        return dto;
     }
 
     @Transactional
