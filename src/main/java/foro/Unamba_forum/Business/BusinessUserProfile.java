@@ -25,7 +25,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BusinessUserProfile {
-  
+
     @Value("${supabase.url}")
     private String supabaseUrl;
 
@@ -81,7 +81,8 @@ public class BusinessUserProfile {
 
         // Subir foto de portada solo si no está vacía
         if (fotoPortada != null && !fotoPortada.isEmpty()) {
-            String portadaPath = construirRutaImagen(nombreCarrera, dtoUserProfile.getIdUsuario(), fotoPortada, "portada");
+            String portadaPath = construirRutaImagen(nombreCarrera, dtoUserProfile.getIdUsuario(), fotoPortada,
+                    "portada");
             String portadaUrl = subirImagenTransformada(fotoPortada, portadaPath);
             tUserProfile.setFotoPortada(portadaUrl);
         }
@@ -91,7 +92,8 @@ public class BusinessUserProfile {
 
     private String construirRutaImagen(String nombreCarrera, String idUsuario, MultipartFile file, String tipo) {
         String nombreLimpio = Validation.normalizarNombreArchivo(file.getOriginalFilename());
-        return nombreCarrera + "/" + tipo + "/" + idUsuario + "_" + nombreLimpio.replaceAll("\\.(jpg|jpeg|png)$", ".webp");
+        return nombreCarrera + "/" + tipo + "/" + idUsuario + "_"
+                + nombreLimpio.replaceAll("\\.(jpg|jpeg|png)$", ".webp");
     }
 
     // Método para transformar la imagen a WebP y subirla
@@ -143,63 +145,61 @@ public class BusinessUserProfile {
     }
 
     @Transactional
-public void update(DtoUserProfile dtoUserProfile, MultipartFile fotoPerfil, MultipartFile fotoPortada) {
-    TUserProfile profile = repoUserProfile.findById(dtoUserProfile.getIdPerfil())
-            .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
+    public void update(DtoUserProfile dtoUserProfile, MultipartFile fotoPerfil, MultipartFile fotoPortada) {
+        TUserProfile profile = repoUserProfile.findById(dtoUserProfile.getIdPerfil())
+                .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
 
-    // Actualizar solo los campos proporcionados (no null)
-    if (dtoUserProfile.getNombre() != null) {
-        profile.setNombre(dtoUserProfile.getNombre());
-    }
-    if (dtoUserProfile.getApellidos() != null) {
-        profile.setApellidos(dtoUserProfile.getApellidos());
-    }
-    if (dtoUserProfile.getDescripcion() != null) {
-        profile.setDescripcion(dtoUserProfile.getDescripcion());
-    }
-    if (dtoUserProfile.getFechaNacimiento() != null) {
-        profile.setFechaNacimiento(dtoUserProfile.getFechaNacimiento());
-    }
-    if (dtoUserProfile.getGenero() != null) {
-        profile.setGenero(dtoUserProfile.getGenero());
-    }
+        // Actualizar solo los campos proporcionados (no null)
+        if (dtoUserProfile.getNombre() != null) {
+            profile.setNombre(dtoUserProfile.getNombre());
+        }
+        if (dtoUserProfile.getApellidos() != null) {
+            profile.setApellidos(dtoUserProfile.getApellidos());
+        }
+        if (dtoUserProfile.getDescripcion() != null) {
+            profile.setDescripcion(dtoUserProfile.getDescripcion());
+        }
+        if (dtoUserProfile.getFechaNacimiento() != null) {
+            profile.setFechaNacimiento(dtoUserProfile.getFechaNacimiento());
+        }
+        if (dtoUserProfile.getGenero() != null) {
+            profile.setGenero(dtoUserProfile.getGenero());
+        }
 
-    profile.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+        profile.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
-    // Lógica para carrera
-    if (dtoUserProfile.getIdCarrera() != null) {
-        TCareer carrera = repoCareer.findById(dtoUserProfile.getIdCarrera())
-                .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
-        profile.setIdCarrera(carrera);
+        // Lógica para carrera
+        if (dtoUserProfile.getIdCarrera() != null) {
+            TCareer carrera = repoCareer.findById(dtoUserProfile.getIdCarrera())
+                    .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
+            profile.setIdCarrera(carrera);
+        }
+
+        // Actualizar foto de perfil
+        if (fotoPerfil != null && !fotoPerfil.isEmpty()) {
+            eliminarImagenAnterior(profile.getFotoPerfil());
+            String perfilPath = construirRutaImagen("ruta", dtoUserProfile.getIdUsuario(), fotoPerfil, "perfil");
+            String perfilUrl = subirImagenTransformada(fotoPerfil, perfilPath);
+            profile.setFotoPerfil(perfilUrl);
+        }
+
+        // Actualizar foto de portada
+        if (fotoPortada != null && !fotoPortada.isEmpty()) {
+            eliminarImagenAnterior(profile.getFotoPortada());
+            String portadaPath = construirRutaImagen("ruta", dtoUserProfile.getIdUsuario(), fotoPortada, "portada");
+            String portadaUrl = subirImagenTransformada(fotoPortada, portadaPath);
+            profile.setFotoPortada(portadaUrl);
+        }
+
+        // Actualizar el usuario si es necesario
+        if (dtoUserProfile.getIdUsuario() != null) {
+            TUser usuario = repoUser.findById(dtoUserProfile.getIdUsuario())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            profile.setIdUsuario(usuario);
+        }
+
+        repoUserProfile.save(profile);
     }
-
-    // Actualizar foto de perfil
-    if (fotoPerfil != null && !fotoPerfil.isEmpty()) {
-        eliminarImagenAnterior(profile.getFotoPerfil());
-        String perfilPath = construirRutaImagen("ruta", dtoUserProfile.getIdUsuario(), fotoPerfil, "perfil");
-        String perfilUrl = subirImagenTransformada(fotoPerfil, perfilPath);
-        profile.setFotoPerfil(perfilUrl);
-    }
-
-    // Actualizar foto de portada
-    if (fotoPortada != null && !fotoPortada.isEmpty()) {
-        eliminarImagenAnterior(profile.getFotoPortada());
-        String portadaPath = construirRutaImagen("ruta", dtoUserProfile.getIdUsuario(), fotoPortada, "portada");
-        String portadaUrl = subirImagenTransformada(fotoPortada, portadaPath);
-        profile.setFotoPortada(portadaUrl);
-    }
-
-    // Actualizar el usuario si es necesario
-    if (dtoUserProfile.getIdUsuario() != null) {
-        TUser usuario = repoUser.findById(dtoUserProfile.getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        profile.setIdUsuario(usuario);
-    }
-
-    // Guardar los cambios en el repositorio
-    repoUserProfile.save(profile);
-}
-
 
     private void eliminarImagenAnterior(String imageUrl) {
         if (imageUrl != null) {

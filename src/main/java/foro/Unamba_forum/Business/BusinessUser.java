@@ -12,10 +12,7 @@ import java.nio.file.Paths;
 import java.sql.Timestamp;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
@@ -93,7 +90,6 @@ public class BusinessUser {
 
     @Transactional
     public void registrarUsuario(DtoRegisterUser dto) throws Exception {
-        // Crear el usuario
         TUser usuario = new TUser();
         usuario.setIdUsuario(UUID.randomUUID().toString());
         usuario.setEmail(dto.getEmail());

@@ -15,7 +15,6 @@ public class BusinessCareer {
     @Autowired
     private RepoCareer schoolRepository;
     
-    //Get all careers
     public List<DtoCareer> getAllCareer() {
         return schoolRepository.findAll().stream()
                 .map(this::convertToDto)
@@ -29,7 +28,7 @@ public class BusinessCareer {
         dto.setFechaRegistro(carrera.getFechaRegistro());
         return dto;
     }
-    // total de carreras
+    
     public long getTotalCareers() {
         return schoolRepository.count();
     }

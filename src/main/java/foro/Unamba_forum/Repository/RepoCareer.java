@@ -7,6 +7,5 @@ import foro.Unamba_forum.Entity.TCareer;
 
 @Repository
 public interface RepoCareer extends JpaRepository<TCareer, String> {
-
-
+    
 }

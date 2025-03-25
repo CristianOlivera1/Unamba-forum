@@ -22,7 +22,6 @@ import foro.Unamba_forum.Dto.DtoUser;
 import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.User.RequestsObject.RequestUpdate;
-import foro.Unamba_forum.Service.User.ResponseObject.ResponseDelete;
 import foro.Unamba_forum.Service.User.ResponseObject.ResponseGetAllUsers;
 import foro.Unamba_forum.Service.User.ResponseObject.ResponseUpdate;
 

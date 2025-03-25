@@ -83,7 +83,7 @@ public class SupabaseStorageService {
             var request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
                     .header("Authorization", "Bearer " + supabaseApiKey)
-                    .header("Content-Type", contentType) // Usar el tipo MIME correcto
+                    .header("Content-Type", contentType)
                     .PUT(java.net.http.HttpRequest.BodyPublishers.ofByteArray(fileBytes))
                     .build();
 
