@@ -59,8 +59,7 @@ public class BusinessUserProfile {
         tUserProfile.setFechaActualizacion(dtoUserProfile.getFechaActualizacion());
 
         // Relacionar usuario y carrera con validación
-        TUser usuario = repoUser.findById(dtoUserProfile.getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        TUser usuario = repoUser.findById(dtoUserProfile.getIdUsuario()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         tUserProfile.setIdUsuario(usuario);
 
         String nombreCarrera = "sin_carrera"; // Si el usuario no tiene carrera
@@ -108,7 +107,7 @@ public class BusinessUserProfile {
             }
             byte[] webpBytes = baos.toByteArray();
             // Subir la imagen transformada
-            return supabaseStorageService.uploadFile(webpBytes, path, "image/webp");
+            return supabaseStorageService.uploadFile(webpBytes, path, "image/webp",bucketName);
         } catch (IOException e) {
             throw new RuntimeException("Error al transformar imagen a WebP: " + e.getMessage());
         }
@@ -148,6 +147,7 @@ public class BusinessUserProfile {
     public void update(DtoUserProfile dtoUserProfile, MultipartFile fotoPerfil, MultipartFile fotoPortada) {
         TUserProfile profile = repoUserProfile.findById(dtoUserProfile.getIdPerfil())
                 .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
+        profile.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
         // Actualizar solo los campos proporcionados (no null)
         if (dtoUserProfile.getNombre() != null) {
@@ -165,8 +165,7 @@ public class BusinessUserProfile {
         if (dtoUserProfile.getGenero() != null) {
             profile.setGenero(dtoUserProfile.getGenero());
         }
-
-        profile.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+        dtoUserProfile.setFechaActualizacion(profile.getFechaActualizacion());
 
         // Lógica para carrera
         if (dtoUserProfile.getIdCarrera() != null) {
@@ -174,11 +173,18 @@ public class BusinessUserProfile {
                     .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
             profile.setIdCarrera(carrera);
         }
+        String nombreCarrera = "sin_carrera"; // Si el usuario no tiene carrera
 
+        if (dtoUserProfile.getIdCarrera() != null) {
+            TCareer carrera = repoCareer.findById(dtoUserProfile.getIdCarrera())
+                    .orElseThrow(() -> new RuntimeException("Carrera no encontrada"));
+                    profile.setIdCarrera(carrera);
+            nombreCarrera = Validation.normalizarNombreCarrera(carrera.getNombre());
+        }
         // Actualizar foto de perfil
         if (fotoPerfil != null && !fotoPerfil.isEmpty()) {
             eliminarImagenAnterior(profile.getFotoPerfil());
-            String perfilPath = construirRutaImagen("ruta", dtoUserProfile.getIdUsuario(), fotoPerfil, "perfil");
+            String perfilPath = construirRutaImagen(nombreCarrera, dtoUserProfile.getIdUsuario(), fotoPerfil, "perfil");
             String perfilUrl = subirImagenTransformada(fotoPerfil, perfilPath);
             profile.setFotoPerfil(perfilUrl);
         }
@@ -186,7 +192,7 @@ public class BusinessUserProfile {
         // Actualizar foto de portada
         if (fotoPortada != null && !fotoPortada.isEmpty()) {
             eliminarImagenAnterior(profile.getFotoPortada());
-            String portadaPath = construirRutaImagen("ruta", dtoUserProfile.getIdUsuario(), fotoPortada, "portada");
+            String portadaPath = construirRutaImagen(nombreCarrera, dtoUserProfile.getIdUsuario(), fotoPortada, "portada");
             String portadaUrl = subirImagenTransformada(fotoPortada, portadaPath);
             profile.setFotoPortada(portadaUrl);
         }
@@ -199,6 +205,7 @@ public class BusinessUserProfile {
         }
 
         repoUserProfile.save(profile);
+
     }
 
     private void eliminarImagenAnterior(String imageUrl) {
