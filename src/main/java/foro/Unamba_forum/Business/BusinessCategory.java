@@ -25,6 +25,7 @@ public class BusinessCategory {
         DtoCategory dto = new DtoCategory();
         dto.setIdCategoria(categoria.getIdCategoria());
         dto.setNombre(categoria.getNombre());
+        dto.setFechaRegistro(categoria.getFechaRegistro());
         return dto;
     }
     
