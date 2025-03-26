@@ -18,5 +18,5 @@ public class DtoFile {
     private String rutaArchivo;
     private Timestamp fechaRegistro;
     @JsonIgnore 
-    private MultipartFile file; // Archivo subido
+    private MultipartFile file;
 }
