@@ -31,6 +31,4 @@ public class RequestUpdateUserProfile {
     private MultipartFile fotoPortada;
     private Date fechaNacimiento;
     private Byte genero;
-    private Timestamp fechaActualizacion;
-
 }

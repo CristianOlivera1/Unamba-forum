@@ -144,8 +144,6 @@ public class UserProfileController {
             dtoUserProfile.setFotoPortada(fotoPortada != null ? fotoPortada.getOriginalFilename() : null);
             dtoUserProfile.setFechaNacimiento(request.getFechaNacimiento());
             dtoUserProfile.setGenero(request.getGenero());
-            dtoUserProfile.setFechaActualizacion(request.getFechaActualizacion());
-
             businessUserProfile.update(dtoUserProfile, fotoPerfil, fotoPortada);
 
             response.setType("success");
