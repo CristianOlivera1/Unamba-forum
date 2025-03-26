@@ -2,6 +2,7 @@ package foro.Unamba_forum.Entity;
 
 import jakarta.persistence.Table;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 
 import jakarta.persistence.Column;
@@ -16,7 +17,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "seguimiento")
-public class TFollowUp {
+public class TFollowUp implements Serializable  {
     @Id
     @Column(name = "idSeguimiento")
     private String idSeguimiento;
@@ -29,5 +30,6 @@ public class TFollowUp {
     @JoinColumn(name = "idSeguido", nullable = false)
     private TUser seguido;
 
+    @Column(name = "fechaSeguimiento")
     private Timestamp fechaSeguimiento;
 }
