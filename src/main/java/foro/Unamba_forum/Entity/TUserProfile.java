@@ -25,7 +25,11 @@ public class TUserProfile implements Serializable{
     @ManyToOne
     @JoinColumn(name = "idUsuario", nullable = false)
     private TUser idUsuario;
-    
+
+    //esto es para poder usar el usuario en 2 metodos diferentes de RepoUserProfile
+    @Column(name = "idUsuario", insertable = false, updatable = false)
+    private String usuario;
+
     @ManyToOne
     @JoinColumn(name = "idCarrera")
     private TCareer idCarrera;
