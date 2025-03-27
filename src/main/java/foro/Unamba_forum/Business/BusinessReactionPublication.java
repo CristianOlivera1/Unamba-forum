@@ -10,14 +10,12 @@ import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoReactionPublication;
 import foro.Unamba_forum.Dto.DtoReactionSummary;
-import foro.Unamba_forum.Dto.DtoUser;
 import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TReactionPublication;
 import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Repository.RepoPublication;
 import foro.Unamba_forum.Repository.RepoReactionPublication;
 import foro.Unamba_forum.Repository.RepoUser;
-import foro.Unamba_forum.Repository.RepoUserProfile;
 import foro.Unamba_forum.Repository.RepoUserProfile;
 
 @Service

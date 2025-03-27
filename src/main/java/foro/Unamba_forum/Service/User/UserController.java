@@ -211,9 +211,6 @@ public class UserController {
             return new ResponseEntity<>(responseRegister, HttpStatus.BAD_REQUEST);
         }
     }
-
- 
-
     //Total de usuarios registrados
     @GetMapping("/total")
     public ResponseEntity<ResponseGeneric<Long>> getTotalUsers() {
