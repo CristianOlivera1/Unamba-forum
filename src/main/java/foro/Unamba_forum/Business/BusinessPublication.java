@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import foro.Unamba_forum.Dto.DtoFile;
 import foro.Unamba_forum.Dto.DtoPublication;
@@ -29,7 +31,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BusinessPublication {
-     @Value("${supabase.url}")
+    @Value("${supabase.url}")
     private String supabaseUrl;
 
     @Value("${supabase.bucket2}")
@@ -53,7 +55,7 @@ public class BusinessPublication {
     @Autowired
     private SupabaseStorageService supabaseStorageService;
 
-       @Transactional
+    @Transactional
     public void insertPublication(DtoPublication dtoPublication) {
         TPublication publication = new TPublication();
         publication.setIdPublicacion(UUID.randomUUID().toString());
@@ -76,18 +78,25 @@ public class BusinessPublication {
         if (dtoPublication.getArchivos() != null) {
             String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
             String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
-        
+
             for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
                 MultipartFile file = dtoArchivo.getFile();
                 if (file == null) {
                     throw new RuntimeException("El archivo no puede ser nulo");
                 }
-        
+
                 String rutaArchivo;
                 if (file.getContentType().startsWith("image")) {
-                    // Construir ruta y subir imagen transformada a WebP
-                    String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
-                            file.getOriginalFilename());
+                    String path;
+                    if (file.getOriginalFilename().endsWith(".webp")) {
+                        // Manejar imágenes WebP directamente
+                        path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                                file.getOriginalFilename());
+                    } else {
+                        // Transformar otros formatos a WebP
+                        path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                                file.getOriginalFilename().replaceAll("\\.(jpg|jpeg|png)$", ".webp"));
+                    }
                     rutaArchivo = subirImagenTransformada(file, path);
                 } else if (file.getContentType().startsWith("video")) {
                     // Construir ruta y subir video sin transformación
@@ -97,7 +106,7 @@ public class BusinessPublication {
                 } else {
                     throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
                 }
-        
+
                 // Guardar archivo en la base de datos
                 TFile archivo = new TFile();
                 archivo.setIdArchivo(UUID.randomUUID().toString());
@@ -106,12 +115,11 @@ public class BusinessPublication {
                 archivo.setRutaArchivo(rutaArchivo);
                 archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
                 repoArchivo.save(archivo);
-        
+
                 dtoArchivo.setIdArchivo(archivo.getIdArchivo());
                 dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
                 dtoArchivo.setRutaArchivo(rutaArchivo);
                 dtoArchivo.setFechaRegistro(archivo.getFechaRegistro());
-                
             }
         }
     }
@@ -133,90 +141,103 @@ public class BusinessPublication {
             }
             byte[] webpBytes = baos.toByteArray();
             // Subir la imagen transformada
-            return supabaseStorageService.uploadFile(webpBytes, path, "image/webp",bucketName2);
+            return supabaseStorageService.uploadFile(webpBytes, path, "image/webp", bucketName2);
         } catch (IOException e) {
             throw new RuntimeException("Error al transformar imagen a WebP: " + e.getMessage());
         }
     }
 
+    public DtoPublication getPublicationDetails(String idPublicacion) {
+        TPublication publication = repoPublication.findById(idPublicacion)
+                .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
+        return convertToDtoPublication(publication);
+    }
+
     @Transactional
-public void updatePublication(DtoPublication dtoPublication) {
-    TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
-            .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
+    public void updatePublication(DtoPublication dtoPublication) {
+        TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
+                .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
 
-    // Actualizar los datos de la publicación
-    publication.setTitulo(dtoPublication.getTitulo());
-    publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
-            .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
-    publication.setContenido(dtoPublication.getContenido());
-    publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+        // Actualizar los datos de la publicación
+        publication.setTitulo(dtoPublication.getTitulo());
+        publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
+        publication.setContenido(dtoPublication.getContenido());
+        publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
-    repoPublication.save(publication);
+        repoPublication.save(publication);
 
-    dtoPublication.setIdUsuario(publication.getUsuario().getIdUsuario());
-    dtoPublication.setIdCarrera(publication.getCarrera().getIdCarrera());
-    dtoPublication.setFechaRegistro(publication.getFechaRegistro());
-    dtoPublication.setFechaActualizacion(publication.getFechaActualizacion());
+        dtoPublication.setIdUsuario(publication.getUsuario().getIdUsuario());
+        dtoPublication.setIdCarrera(publication.getCarrera().getIdCarrera());
+        dtoPublication.setFechaRegistro(publication.getFechaRegistro());
+        dtoPublication.setFechaActualizacion(publication.getFechaActualizacion());
 
-    // Eliminar archivos existentes en Supabase y en la base de datos
-    List<TFile> existingFiles = repoArchivo.findByPublicacion(publication);
-    for (TFile archivo : existingFiles) {
-        eliminarArchivoAnterior(archivo.getRutaArchivo());
-    }
-    repoArchivo.deleteAll(existingFiles);
+        // Eliminar archivos existentes en Supabase y en la base de datos
+        List<TFile> existingFiles = repoArchivo.findByPublicacion(publication);
+        for (TFile archivo : existingFiles) {
+            eliminarArchivoAnterior(archivo.getRutaArchivo());
+        }
+        repoArchivo.deleteAll(existingFiles);
 
-    // Guardar nuevos archivos
-    if (dtoPublication.getArchivos() != null) {
-        String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
-        String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
+        // Guardar nuevos archivos
+        if (dtoPublication.getArchivos() != null) {
+            String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
+            String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
 
-        for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
-            MultipartFile file = dtoArchivo.getFile();
-            if (file == null) {
-                throw new RuntimeException("El archivo no puede ser nulo");
+            for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
+                MultipartFile file = dtoArchivo.getFile();
+                if (file == null) {
+                    throw new RuntimeException("El archivo no puede ser nulo");
+                }
+
+                String rutaArchivo;
+                if (file.getContentType().startsWith("image")) {
+                    String path;
+                    if (file.getOriginalFilename().endsWith(".webp")) {
+                        // Manejar imágenes WebP directamente
+                        path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                                file.getOriginalFilename());
+                    } else {
+                        // Transformar otros formatos a WebP
+                        path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                                file.getOriginalFilename().replaceAll("\\.(jpg|jpeg|png)$", ".webp"));
+                    }
+                    rutaArchivo = subirImagenTransformada(file, path);
+                } else if (file.getContentType().startsWith("video")) {
+                    // Construir ruta y subir video sin transformación
+                    String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                            file.getOriginalFilename());
+                    rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
+                } else {
+                    throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
+                }
+
+                // Guardar archivo en la base de datos
+                TFile archivo = new TFile();
+                archivo.setIdArchivo(UUID.randomUUID().toString());
+                archivo.setPublicacion(publication);
+                archivo.setTipo(file.getContentType().startsWith("image") ? "imagen" : "video");
+                archivo.setRutaArchivo(rutaArchivo);
+                archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
+                repoArchivo.save(archivo);
+
+                dtoArchivo.setIdArchivo(archivo.getIdArchivo());
+                dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
+                dtoArchivo.setRutaArchivo(rutaArchivo);
+                dtoArchivo.setFechaRegistro(archivo.getFechaRegistro());
             }
-
-            String rutaArchivo;
-            if (file.getContentType().startsWith("image")) {
-                // Construir ruta y subir imagen transformada a WebP
-                String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
-                        file.getOriginalFilename());
-                rutaArchivo = subirImagenTransformada(file, path);
-            } else if (file.getContentType().startsWith("video")) {
-                // Construir ruta y subir video sin transformación
-                String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
-                        file.getOriginalFilename());
-                rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
-            } else {
-                throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
-            }
-
-            // Guardar archivo en la base de datos
-            TFile archivo = new TFile();
-            archivo.setIdArchivo(UUID.randomUUID().toString());
-            archivo.setPublicacion(publication);
-            archivo.setTipo(file.getContentType().startsWith("image") ? "imagen" : "video");
-            archivo.setRutaArchivo(rutaArchivo);
-            archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
-            repoArchivo.save(archivo);
-
-            dtoArchivo.setIdArchivo(archivo.getIdArchivo());
-            dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
-            dtoArchivo.setRutaArchivo(rutaArchivo);
-            dtoArchivo.setFechaRegistro(archivo.getFechaRegistro());
         }
     }
-}
 
-private void eliminarArchivoAnterior(String fileUrl) {
-    if (fileUrl != null) {
-        String oldPath = fileUrl.replace(supabaseUrl + "/storage/v1/object/public/", "");
-        boolean eliminado = supabaseStorageService.deleteFile(oldPath);
-        if (!eliminado) {
-            System.out.println("No se pudo eliminar el archivo anterior: " + oldPath);
+    private void eliminarArchivoAnterior(String fileUrl) {
+        if (fileUrl != null) {
+            String oldPath = fileUrl.replace(supabaseUrl + "/storage/v1/object/public/", "");
+            boolean eliminado = supabaseStorageService.deleteFile(oldPath);
+            if (!eliminado) {
+                System.out.println("No se pudo eliminar el archivo anterior: " + oldPath);
+            }
         }
     }
-}
 
     @Transactional
     public void deletePublication(String idPublicacion) {
@@ -236,6 +257,7 @@ private void eliminarArchivoAnterior(String fileUrl) {
                 .map(this::convertToDtoPublication)
                 .collect(Collectors.toList());
     }
+    
 
     public List<DtoPublication> getPublicationsWithoutFiles() {
         List<TPublication> publications = repoPublication.findAll();
@@ -254,6 +276,7 @@ private void eliminarArchivoAnterior(String fileUrl) {
         dto.setTitulo(publication.getTitulo());
         dto.setContenido(publication.getContenido());
         dto.setFechaRegistro(publication.getFechaRegistro());
+        dto.setFechaActualizacion(publication.getFechaActualizacion());
 
         List<TFile> archivos = repoArchivo.findByPublicacion(publication);
         List<DtoFile> dtoArchivos = archivos.stream().map(this::convertToDtoArchivo).collect(Collectors.toList());
@@ -270,5 +293,15 @@ private void eliminarArchivoAnterior(String fileUrl) {
         dto.setRutaArchivo(archivo.getRutaArchivo());
         dto.setFechaRegistro(archivo.getFechaRegistro());
         return dto;
+    }
+
+    public Page<DtoPublication> getPublicationsWithFilesPageable(Pageable pageable) {
+        Page<TPublication> publications = repoPublication.findPublicationsWithFiles(pageable);
+        return publications.map(this::convertToDtoPublication);
+    }
+    
+    public Page<DtoPublication> getPublicationsWithoutFilesPageable(Pageable pageable) {
+        Page<TPublication> publications = repoPublication.findPublicationsWithoutFiles(pageable);
+        return publications.map(this::convertToDtoPublication);
     }
 }
