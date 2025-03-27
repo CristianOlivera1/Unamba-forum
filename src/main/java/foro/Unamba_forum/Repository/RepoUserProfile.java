@@ -14,6 +14,10 @@ import foro.Unamba_forum.Entity.TUserProfile;
 @Repository
 public interface RepoUserProfile extends JpaRepository<TUserProfile, String> {
     Optional<TUserProfile> findByIdUsuario(TUser idUsuario);
-     @Query(value = "SELECT * FROM perfilusuario ORDER BY RAND() LIMIT ?1", nativeQuery = true)
+
+     // Método para buscar por ID en formato String
+     Optional<TUserProfile> findByUsuario(String idUsuario);
+
+    @Query(value = "SELECT * FROM perfilusuario ORDER BY RAND() LIMIT ?1", nativeQuery = true)
     List<TUserProfile> findRandomUsers(int count);
 }
