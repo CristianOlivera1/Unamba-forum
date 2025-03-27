@@ -212,30 +212,7 @@ public class UserController {
         }
     }
 
-    //Obtener usuario
-    @GetMapping("/get/{idUsuario}")
-    public ResponseEntity<ResponseGeneric<DtoUser>> getUserForEdit(@PathVariable String idUsuario) {
-        ResponseGeneric<DtoUser> response = new ResponseGeneric<>();
-        try {
-            DtoUser dtoUser = businessUser.getUserById(idUsuario);
-
-            if (dtoUser == null) {
-                response.setType("error");
-                response.setListMessage(List.of("Usuario no encontrado"));
-                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-            }
-
-            response.setType("success");
-            response.setData(dtoUser);
-            response.setListMessage(List.of("Información del usuario cargada correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (Exception e) {
-            response.setType("exception");
-            response.setListMessage(List.of("Error al cargar la información del usuario"));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+ 
 
     //Total de usuarios registrados
     @GetMapping("/total")
