@@ -32,4 +32,5 @@ public class TUser implements Serializable {
     @Column(name = "fechaActualizacion")
     private Timestamp fechaActualizacion;
     
+
 }
