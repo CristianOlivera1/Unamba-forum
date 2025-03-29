@@ -90,6 +90,7 @@ private DtoReactionSummary createReactionSummary(String idPublicacion, String ti
     public boolean hasUserReacted(String idUsuario, String idPublicacion) {
         return repoReaction.existsByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion);
     }
+    
     // Remover una reacción
     public void removeReaction(String idUsuario, String idPublicacion) {
         repoReaction.deleteByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion);
