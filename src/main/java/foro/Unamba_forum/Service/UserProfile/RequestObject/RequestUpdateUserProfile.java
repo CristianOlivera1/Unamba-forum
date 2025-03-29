@@ -1,6 +1,5 @@
 package foro.Unamba_forum.Service.UserProfile.RequestObject;
 
-import java.sql.Timestamp;
 import java.sql.Date;
 
 import org.springframework.web.multipart.MultipartFile;
