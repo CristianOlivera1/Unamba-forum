@@ -15,6 +15,10 @@ public class DtoCommentPublication {
     private String contenido;
     private Timestamp fechaRegistro;
     private Timestamp fechaActualizacion;
-    private long reacciones;
-    private List<DtoResponseComment> respuestas;
+    private List<DtoReactionSummaryComment> reacciones;
+
+    private long numeroRespuestas;
+
+    private DtoUserProfile userProfile;
+
 }
