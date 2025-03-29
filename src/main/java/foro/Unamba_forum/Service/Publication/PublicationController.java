@@ -20,7 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 
+import foro.Unamba_forum.Business.BusinessCommentPublication;
 import foro.Unamba_forum.Business.BusinessPublication;
+import foro.Unamba_forum.Business.BusinessReactionComment;
+import foro.Unamba_forum.Business.BusinessResponseComment;
+import foro.Unamba_forum.Dto.DtoCommentPublication;
 import foro.Unamba_forum.Dto.DtoFile;
 import foro.Unamba_forum.Dto.DtoPublication;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
@@ -38,6 +42,24 @@ public class PublicationController {
     @Autowired
     private BusinessPublication businessPublication;
 
+    @Autowired
+    private BusinessCommentPublication businessComment;
+
+    @Autowired
+    private BusinessResponseComment businessResponse;
+
+    @Autowired
+    private BusinessReactionComment businessReaction;
+    
+@GetMapping("/hierarchy/{idPublicacion}")
+public ResponseEntity<List<DtoCommentPublication>> getCommentHierarchy(@PathVariable String idPublicacion) {
+    List<DtoCommentPublication> comments = businessComment.getCommentsByPublication(idPublicacion);
+    comments.forEach(comment -> {
+        comment.setReacciones(businessReaction.countReactionsByComment(comment.getIdComentario()));
+        comment.setRespuestas(businessResponse.getResponsesByComment(comment.getIdComentario()));
+    });
+    return new ResponseEntity<>(comments, HttpStatus.OK);
+}
     @PostMapping("/insert")
     public ResponseEntity<ResponseInsertPublication> insertPublication(
             @ModelAttribute RequestInsertPublication request) {
