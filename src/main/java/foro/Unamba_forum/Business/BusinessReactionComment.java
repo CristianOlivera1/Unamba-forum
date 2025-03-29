@@ -1,20 +1,25 @@
 package foro.Unamba_forum.Business;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoReactionComment;
+import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TCommentPublication;
 import foro.Unamba_forum.Entity.TReactionComment;
 import foro.Unamba_forum.Entity.TResponseComment;
 import foro.Unamba_forum.Entity.TUser;
+import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Repository.RepoCommentPublication;
 import foro.Unamba_forum.Repository.RepoReactionComment;
 import foro.Unamba_forum.Repository.RepoResponseComment;
 import foro.Unamba_forum.Repository.RepoUser;
+import foro.Unamba_forum.Repository.RepoUserProfile;
 
 @Service
 public class BusinessReactionComment {
@@ -29,6 +34,9 @@ public class BusinessReactionComment {
     private RepoResponseComment repoResponse;
     @Autowired
     private RepoUser repoUser;
+
+    @Autowired
+    private RepoUserProfile repoUserProfile;
 
     // Agregar una reacción
     public void addReaction(DtoReactionComment dtoReaction) {
@@ -71,10 +79,32 @@ public class BusinessReactionComment {
     public boolean hasUserReactedToComment(String idUsuario, String idComentario) {
         return repoReaction.existsByUsuarioIdUsuarioAndComentarioIdComentario(idUsuario, idComentario);
     }
+
     // Contar reacciones de un comentario
     public long countReactionsByComment(String idComentario) {
         return repoReaction.countByComentarioIdComentario(idComentario);
     }
+
+    //obtener los usuarios que reaccionaron por tipo.
+    public List<DtoUserProfile> getUsersByReactionType(String idComentario, String tipo) {
+    return repoReaction.findByComentarioIdComentarioAndTipo(idComentario, tipo)
+        .stream()
+        .map(reaction -> {
+            TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+            DtoUserProfile userProfile = new DtoUserProfile();
+            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+            userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
+            userProfile.setNombre(userProfileEntity.getNombre());
+            userProfile.setApellidos(userProfileEntity.getApellidos());
+            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
+
+            return userProfile;
+        })
+        .collect(Collectors.toList());
+}
 
     // Contar reacciones de una respuesta
     public long countReactionsByResponse(String idRespuesta) {
