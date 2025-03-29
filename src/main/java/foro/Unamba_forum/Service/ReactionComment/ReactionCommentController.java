@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessReactionComment;
 import foro.Unamba_forum.Dto.DtoReactionComment;
+import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.ReactionComment.ResponseObject.ResponseInsertReactionC;
 import foro.Unamba_forum.Service.ReactionComment.ResquestsObject.RequestsInsertReactionC;
@@ -94,6 +95,31 @@ public class ReactionCommentController {
             e.printStackTrace();
             response.setType("exception");
             response.setListMessage(List.of("Error al contar las reacciones de la respuesta"));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/users/{idComentario}/{tipo}")
+    public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getUsersByReactionType(
+            @PathVariable String idComentario, @PathVariable String tipo) {
+        ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
+        try {
+            List<DtoUserProfile> users = businessReaction.getUsersByReactionType(idComentario, tipo);
+
+            response.setListMessage(List.of("Usuarios obtenidos por tipo de reaccion"));
+            response.setType("success");
+            response.setData(users);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (RuntimeException e) {
+            response.setType("error");
+            response.setListMessage(List.of(e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setType("exception");
+            response.setListMessage(List.of("Ocurrió un error al obtener los usuarios por tipo de reacción"));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
