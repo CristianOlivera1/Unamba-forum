@@ -11,4 +11,7 @@ import foro.Unamba_forum.Entity.TResponseComment;
 public interface RepoResponseComment extends JpaRepository<TResponseComment, String> {
     List<TResponseComment> findByComentarioIdComentario(String idComentario);
     List<TResponseComment> findByRespuestaPadreIdRespuesta(String idRespuestaPadre);
+
+    long countByComentarioIdComentario(String idComentario);
+
 }
