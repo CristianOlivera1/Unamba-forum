@@ -1,5 +1,7 @@
 package foro.Unamba_forum.Repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +13,9 @@ public interface RepoReactionComment extends JpaRepository<TReactionComment, Str
     long countByRespuestaIdRespuesta(String idRespuesta);
 
     boolean existsByUsuarioIdUsuarioAndComentarioIdComentario(String idUsuario, String idComentario);
+
+    List<TReactionComment> findByComentarioIdComentario(String idComentario);
+
+
+    List<TReactionComment> findByComentarioIdComentarioAndTipo(String idComentario, String tipo);
 }
