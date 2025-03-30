@@ -80,12 +80,17 @@ public class BusinessReactionComment {
         return repoReaction.existsByUsuarioIdUsuarioAndComentarioIdComentario(idUsuario, idComentario);
     }
 
+    // Verificar si un usuario ya ha reaccionado a una respuesta
+public boolean hasUserReactedToResponse(String idUsuario, String idRespuesta) {
+    return repoReaction.existsByUsuarioIdUsuarioAndRespuestaIdRespuesta(idUsuario, idRespuesta);
+}
+
     // Contar reacciones de un comentario
     public long countReactionsByComment(String idComentario) {
         return repoReaction.countByComentarioIdComentario(idComentario);
     }
 
-    //obtener los usuarios que reaccionaron por tipo.
+    //obtener los usuarios que reaccionaron a un comentario por tipo.
     public List<DtoUserProfile> getUsersByReactionType(String idComentario, String tipo) {
     return repoReaction.findByComentarioIdComentarioAndTipo(idComentario, tipo)
         .stream()
@@ -105,6 +110,29 @@ public class BusinessReactionComment {
         })
         .collect(Collectors.toList());
 }
+
+// Obtener los usuarios que reaccionaron a respuestas de un comentario y respuestas de respuestas por tipo.
+public List<DtoUserProfile> getUsersByReactionTypeForResponses(String idRespuesta, String tipo) {
+    return repoReaction.findByRespuestaIdRespuestaAndTipo(idRespuesta, tipo)
+        .stream()
+        .map(reaction -> {
+            TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+            DtoUserProfile userProfile = new DtoUserProfile();
+            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+            userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
+            userProfile.setNombre(userProfileEntity.getNombre());
+            userProfile.setApellidos(userProfileEntity.getApellidos());
+            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
+
+            return userProfile;
+        })
+        .collect(Collectors.toList());
+}
+
+
 
     // Contar reacciones de una respuesta
     public long countReactionsByResponse(String idRespuesta) {

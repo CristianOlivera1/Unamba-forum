@@ -16,4 +16,7 @@ public class DtoResponseComment {
     private String contenido;
     private Timestamp fechaRegistro;
     private List<DtoResponseComment> respuestasHijas; // Respuestas a respuestas
+    private DtoUserProfile userProfile;
+    private List<DtoReactionSummaryComment> reacciones;
+
 }

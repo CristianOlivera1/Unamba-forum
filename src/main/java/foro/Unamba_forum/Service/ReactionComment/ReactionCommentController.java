@@ -32,11 +32,21 @@ public class ReactionCommentController {
     public ResponseEntity<ResponseInsertReactionC> addReaction(@ModelAttribute RequestsInsertReactionC request) {
         ResponseInsertReactionC response = new ResponseInsertReactionC();
         try {
-            // Check if the user has already reacted to the same comment
-            boolean alreadyReacted = businessReaction.hasUserReactedToComment(request.getIdUsuario(), request.getIdComentario());
+            boolean alreadyReacted = false;
+
+            // Verificar si el usuario ya reaccionó al comentario
+            if (request.getIdComentario() != null) {
+                alreadyReacted = businessReaction.hasUserReactedToComment(request.getIdUsuario(), request.getIdComentario());
+            }
+    
+            // Verificar si el usuario ya reaccionó a la respuesta
+            if (request.getIdRespuesta() != null) {
+                alreadyReacted = businessReaction.hasUserReactedToResponse(request.getIdUsuario(), request.getIdRespuesta());
+            }
+    
             if (alreadyReacted) {
                 response.setType("error");
-                response.setListMessage(List.of("El usuario ya ha reaccionado a este comentario"));
+                response.setListMessage(List.of("El usuario ya ha reaccionado a este elemento"));
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
 
@@ -121,6 +131,32 @@ public class ReactionCommentController {
             response.setType("exception");
             response.setListMessage(List.of("Ocurrió un error al obtener los usuarios por tipo de reacción"));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("/users/response/{idRespuesta}/{tipo}")
+    public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getUsersByReactionTypeForResponses(
+        @PathVariable String idRespuesta, @PathVariable String tipo) {
+        ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
+        try {
+        List<DtoUserProfile> users = businessReaction.getUsersByReactionTypeForResponses(idRespuesta, tipo);
+
+        response.setListMessage(List.of("Usuarios obtenidos por tipo de reacción en respuestas"));
+        response.setType("success");
+        response.setData(users);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (RuntimeException e) {
+        response.setType("error");
+        response.setListMessage(List.of(e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+
+        } catch (Exception e) {
+        e.printStackTrace();
+        response.setType("exception");
+        response.setListMessage(List.of("Ocurrió un error al obtener los usuarios por tipo de reacción en respuestas"));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

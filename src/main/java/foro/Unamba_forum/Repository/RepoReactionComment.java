@@ -14,8 +14,17 @@ public interface RepoReactionComment extends JpaRepository<TReactionComment, Str
 
     boolean existsByUsuarioIdUsuarioAndComentarioIdComentario(String idUsuario, String idComentario);
 
+    boolean existsByUsuarioIdUsuarioAndRespuestaIdRespuesta(String idUsuario, String idRespuesta);
+
+
     List<TReactionComment> findByComentarioIdComentario(String idComentario);
 
+    List<TReactionComment> findByRespuestaIdRespuesta(String idRespuesta);
 
     List<TReactionComment> findByComentarioIdComentarioAndTipo(String idComentario, String tipo);
+
+    List<TReactionComment> findByRespuestaIdRespuestaAndTipo(String idRespuesta, String tipo);
+
+    
+    
 }

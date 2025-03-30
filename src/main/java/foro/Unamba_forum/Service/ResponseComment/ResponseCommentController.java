@@ -69,7 +69,7 @@ public class ResponseCommentController {
     public ResponseEntity<ResponseGetAllRC> getResponsesByComment(@PathVariable String idComentario) {
         ResponseGetAllRC response = new ResponseGetAllRC();
         try {
-            List<DtoResponseComment> responses = businessResponse.getResponsesByComment(idComentario);
+            List<DtoResponseComment> responses = businessResponse.getResponsesByCommentWithDetails(idComentario);
 
             response.setType("success");
             response.setListMessage(List.of("Respuestas obtenidas correctamente"));
