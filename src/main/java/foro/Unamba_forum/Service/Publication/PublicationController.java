@@ -1,7 +1,9 @@
 package foro.Unamba_forum.Service.Publication;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +63,7 @@ public class PublicationController {
                     DtoFile dtoArchivo = new DtoFile();
                     dtoArchivo.setFile(file);
                     dtoArchivo.setTipo(file.getContentType().startsWith("image") ? "imagen" : "video");
-                    dtoArchivo.setRutaArchivo(file.getOriginalFilename()); 
+                    dtoArchivo.setRutaArchivo(file.getOriginalFilename());
                     return dtoArchivo;
                 }).collect(Collectors.toList());
             }
@@ -80,7 +82,7 @@ public class PublicationController {
         }
     }
 
-    //para obtener una publicacion en detalles y precargar para actualizar
+    // para obtener una publicacion en detalles y precargar para actualizar
     @GetMapping("/details/{idPublicacion}")
     public ResponseEntity<ResponseGeneric<DtoPublication>> getPublicationDetails(@PathVariable String idPublicacion) {
         ResponseGeneric<DtoPublication> response = new ResponseGeneric<>();
@@ -93,6 +95,41 @@ public class PublicationController {
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Error al obtener los detalles de la publicación: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // obtener publicacion relacionadas
+    @GetMapping("/publicationrelated/{idPublicacion}")
+    public ResponseEntity<ResponseGeneric<Map<String, Object>>> getPublicationDetailsWithRelated(
+            @PathVariable String idPublicacion,
+            @RequestParam(defaultValue = "0") int page) {
+        ResponseGeneric<Map<String, Object>> response = new ResponseGeneric<>();
+        try {
+            // Obtener los detalles de la publicación
+            DtoPublication publicationDetails = businessPublication.getPublicationDetails(idPublicacion);
+
+            // Obtener publicaciones relacionadas (mezclando con y sin archivos)
+            Page<DtoPublication> relatedPublications = businessPublication.getRelatedPublications(
+                    publicationDetails.getIdCarrera(),
+                    publicationDetails.getIdCategoria(),
+                    idPublicacion,
+                    PageRequest.of(page, 5, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+
+            // Construir la respuesta
+            Map<String, Object> data = new HashMap<>();
+            data.put("publicationDetails", publicationDetails);
+            data.put("relatedPublications", relatedPublications.getContent());
+
+            response.setType("success");
+            response.setData(data);
+            response.setListMessage(
+                    List.of("Detalles de la publicación y publicaciones relacionadas obtenidos correctamente"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(
+                    List.of("Error al obtener los detalles y publicaciones relacionadas: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -113,7 +150,7 @@ public class PublicationController {
             if (request.getArchivos() != null && !request.getArchivos().isEmpty()) {
                 archivos = request.getArchivos().stream().map(file -> {
                     DtoFile dtoArchivo = new DtoFile();
-                    dtoArchivo.setFile(file); 
+                    dtoArchivo.setFile(file);
                     dtoArchivo.setTipo(file.getContentType().startsWith("image") ? "imagen" : "video");
                     dtoArchivo.setRutaArchivo(file.getOriginalFilename());
                     return dtoArchivo;
