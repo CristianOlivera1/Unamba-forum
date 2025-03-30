@@ -152,49 +152,57 @@ public class BusinessPublication {
         }
     }
 
+    //Detalles
     public DtoPublication getPublicationDetails(String idPublicacion) {
         TPublication publication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
         return convertToDtoPublication(publication);
     }
 
+    // Obtener publicaciones relacionadas
+    public Page<DtoPublication> getRelatedPublications(String idCarrera, String idCategoria, String excludeIdPublicacion, Pageable pageable) {
+        Page<TPublication> relatedPublications = repoPublication.findRelatedPublications(idCarrera, idCategoria, excludeIdPublicacion, pageable);
+        return relatedPublications.map(this::convertToDtoPublication);
+    }
     @Transactional
     public void updatePublication(DtoPublication dtoPublication) {
         TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-
+    
         // Actualizar los datos de la publicación
         publication.setTitulo(dtoPublication.getTitulo());
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
         publication.setContenido(dtoPublication.getContenido());
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
-
+    
         repoPublication.save(publication);
-
+    
         dtoPublication.setIdUsuario(publication.getUsuario().getIdUsuario());
         dtoPublication.setIdCarrera(publication.getCarrera().getIdCarrera());
         dtoPublication.setFechaRegistro(publication.getFechaRegistro());
         dtoPublication.setFechaActualizacion(publication.getFechaActualizacion());
-
-        // Eliminar archivos existentes en Supabase y en la base de datos
+    
+        // Eliminar archivos existentes en Supabase y en la base de datos (si existen)
         List<TFile> existingFiles = repoArchivo.findByPublicacion(publication);
-        for (TFile archivo : existingFiles) {
-            eliminarArchivoAnterior(archivo.getRutaArchivo());
+        if (!existingFiles.isEmpty()) {
+            for (TFile archivo : existingFiles) {
+                eliminarArchivoAnterior(archivo.getRutaArchivo());
+            }
+            repoArchivo.deleteAll(existingFiles);
         }
-        repoArchivo.deleteAll(existingFiles);
-
-        // Guardar nuevos archivos
-        if (dtoPublication.getArchivos() != null) {
+    
+        // Guardar nuevos archivos si se proporcionan
+        if (dtoPublication.getArchivos() != null && !dtoPublication.getArchivos().isEmpty()) {
             String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
             String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
-
+    
             for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
                 MultipartFile file = dtoArchivo.getFile();
                 if (file == null) {
                     throw new RuntimeException("El archivo no puede ser nulo");
                 }
-
+    
                 String rutaArchivo;
                 if (file.getContentType().startsWith("image")) {
                     String path;
@@ -216,7 +224,7 @@ public class BusinessPublication {
                 } else {
                     throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
                 }
-
+    
                 // Guardar archivo en la base de datos
                 TFile archivo = new TFile();
                 archivo.setIdArchivo(UUID.randomUUID().toString());
@@ -225,7 +233,7 @@ public class BusinessPublication {
                 archivo.setRutaArchivo(rutaArchivo);
                 archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
                 repoArchivo.save(archivo);
-
+    
                 dtoArchivo.setIdArchivo(archivo.getIdArchivo());
                 dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
                 dtoArchivo.setRutaArchivo(rutaArchivo);
