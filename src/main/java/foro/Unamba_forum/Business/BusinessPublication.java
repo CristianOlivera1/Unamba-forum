@@ -164,6 +164,7 @@ public class BusinessPublication {
         Page<TPublication> relatedPublications = repoPublication.findRelatedPublications(idCarrera, idCategoria, excludeIdPublicacion, pageable);
         return relatedPublications.map(this::convertToDtoPublication);
     }
+
     @Transactional
     public void updatePublication(DtoPublication dtoPublication) {
         TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
@@ -263,6 +264,7 @@ public class BusinessPublication {
         repoPublication.delete(publication);
     }
 
+    // Obtener publicaciones con archivos
     public List<DtoPublication> getPublicationsWithFiles() {
         List<TPublication> publications = repoPublication.findAll();
         return publications.stream()
@@ -270,12 +272,29 @@ public class BusinessPublication {
                 .map(this::convertToDtoPublication)
                 .collect(Collectors.toList());
     }
-    
 
+    // Obtener publicaciones con archivos de una carrera en especifico
+    public List<DtoPublication> getPublicationsWithFilesByCareer(String idCarrera) {
+        List<TPublication> publications = repoPublication.findByCarreraId(idCarrera);
+        return publications.stream()
+                .filter(pub -> !repoArchivo.findByPublicacion(pub).isEmpty())
+                .map(this::convertToDtoPublication)
+                .collect(Collectors.toList());
+    }
+
+    // Obtener publicaciones sin archivos
     public List<DtoPublication> getPublicationsWithoutFiles() {
         List<TPublication> publications = repoPublication.findAll();
         return publications.stream()
                 .filter(pub -> repoArchivo.findByPublicacion(pub).isEmpty())
+                .map(this::convertToDtoPublication)
+                .collect(Collectors.toList());
+    }
+
+    // Obtener publicaciones sin archivos de una carrera en especifico
+    public List<DtoPublication> getPublicationsWithoutFilesByCareer(String idCarrera) {
+        List<TPublication> publications = repoPublication.findPublicationsWithoutFilesByCareer2(idCarrera);
+        return publications.stream()
                 .map(this::convertToDtoPublication)
                 .collect(Collectors.toList());
     }
@@ -298,6 +317,10 @@ public class BusinessPublication {
         return dto;
     }
 
+    public long getTotalPublications() {
+        return repoPublication.count();
+    }
+
     private DtoFile convertToDtoArchivo(TFile archivo) {
         DtoFile dto = new DtoFile();
         dto.setIdArchivo(archivo.getIdArchivo());
@@ -308,13 +331,28 @@ public class BusinessPublication {
         return dto;
     }
 
+    // Obtener publicaciones con archivos paginadas
     public Page<DtoPublication> getPublicationsWithFilesPageable(Pageable pageable) {
         Page<TPublication> publications = repoPublication.findPublicationsWithFiles(pageable);
         return publications.map(this::convertToDtoPublication);
     }
-    
+
+    // Obtener publicaciones con archivos paginadas segun una carrera
+    public Page<DtoPublication> getPublicationsWithFilesByCareerPageable(String idCarrera, Pageable pageable) {
+        Page<TPublication> publications = repoPublication.findPublicationsWithFilesByCareer(idCarrera, pageable);
+        return publications.map(this::convertToDtoPublication);
+    }
+
+    // Obtener publicaciones sin archivos paginadas
     public Page<DtoPublication> getPublicationsWithoutFilesPageable(Pageable pageable) {
         Page<TPublication> publications = repoPublication.findPublicationsWithoutFiles(pageable);
         return publications.map(this::convertToDtoPublication);
     }
+
+    // Obtener publicaciones sin archivos paginadas segun una carrera
+    public Page<DtoPublication> getPublicationsWithoutFilesByCareerPageable(String idCarrera, Pageable pageable) {
+        Page<TPublication> publications = repoPublication.findPublicationsWithoutFilesByCareer(idCarrera, pageable);
+        return publications.map(this::convertToDtoPublication);
+    }
+
 }

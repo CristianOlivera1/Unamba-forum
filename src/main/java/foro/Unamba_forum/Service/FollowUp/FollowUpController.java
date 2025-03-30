@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessFollowUp;
 import foro.Unamba_forum.Dto.DtoFollowUp;
+import foro.Unamba_forum.Dto.DtoFollowUpTotals;
 import foro.Unamba_forum.Service.FollowUp.ResponseObject.ResponseGetAllFollowUp;
 import foro.Unamba_forum.Service.FollowUp.ResponseObject.ResponseInsertFollowUp;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
@@ -31,6 +32,11 @@ public class FollowUpController {
     public ResponseEntity<ResponseInsertFollowUp> followUser(@RequestParam String idSeguidor, @RequestParam String idSeguido) {
         ResponseInsertFollowUp response = new ResponseInsertFollowUp();
         try {
+            if (businessFollowUp.isAlreadyFollowing(idSeguidor, idSeguido)) {
+                response.setType("error");
+                response.setListMessage(List.of("Ya estás siguiendo a este usuario"));
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
             businessFollowUp.followUser(idSeguidor, idSeguido);
             response.setType("success");
             response.setListMessage(List.of("Usuario seguido correctamente"));
@@ -85,6 +91,22 @@ public class FollowUpController {
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Error al obtener los seguidos: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+     @GetMapping("/totals/{idUsuario}")
+    public ResponseEntity<ResponseGeneric<DtoFollowUpTotals>> getFollowUpTotals(@PathVariable String idUsuario) {
+        ResponseGeneric<DtoFollowUpTotals> response = new ResponseGeneric<>();
+        try {
+            DtoFollowUpTotals totals = businessFollowUp.getFollowUpTotals(idUsuario);
+            response.setType("success");
+            response.setData(totals);
+            response.setListMessage(List.of("Totales de seguidores y seguidos obtenidos correctamente."));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener los totales: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

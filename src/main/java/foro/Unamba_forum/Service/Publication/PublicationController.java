@@ -189,6 +189,25 @@ public class PublicationController {
         }
     }
 
+    @GetMapping("/withfiles/career/paginated/{idCarrera}")
+    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithFilesByCareerPaginated(
+        @PathVariable String idCarrera,
+        @RequestParam(defaultValue = "0") int page) {
+        ResponseGetAllPublication response = new ResponseGetAllPublication();
+        try {
+        Page<DtoPublication> publications = businessPublication.getPublicationsWithFilesByCareerPageable(
+            idCarrera, PageRequest.of(page, 3, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+        response.setType("success");
+        response.setData(publications.getContent());
+        response.setListMessage(List.of("Publicaciones con archivos por carrera obtenidas correctamente"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener publicaciones con archivos por carrera: " + e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/withoutfiles/paginated")
     public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFiles(
             @RequestParam(defaultValue = "0") int page) {
@@ -203,6 +222,41 @@ public class PublicationController {
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Error al obtener publicaciones sin archivos: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/withoutfiles/career/paginated/{idCarrera}")
+    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFilesByCareerPaginated(
+        @PathVariable String idCarrera,
+        @RequestParam(defaultValue = "0") int page) {
+        ResponseGetAllPublication response = new ResponseGetAllPublication();
+        try {
+        Page<DtoPublication> publications = businessPublication.getPublicationsWithoutFilesByCareerPageable(
+            idCarrera, PageRequest.of(page, 3, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+        response.setType("success");
+        response.setData(publications.getContent());
+        response.setListMessage(List.of("Publicaciones sin archivos por carrera obtenidas correctamente"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener publicaciones sin archivos por carrera: " + e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<ResponseGeneric<Long>> getTotalPublications() {
+        ResponseGeneric<Long> response = new ResponseGeneric<>();
+        try {
+            long totalPublications = businessPublication.getTotalPublications();
+            response.setType("success");
+            response.setData(totalPublications);
+            response.setListMessage(List.of("Total de publicaciones obtenidas correctamente"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener el total de publicaciones: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -238,6 +292,22 @@ public class PublicationController {
         }
     }
 
+    @GetMapping("/withfiles/career/{idCarrera}")
+    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithFilesByCareer(@PathVariable String idCarrera) {
+        ResponseGetAllPublication response = new ResponseGetAllPublication();
+        try {
+            List<DtoPublication> publications = businessPublication.getPublicationsWithFilesByCareer(idCarrera);
+            response.setType("success");
+            response.setData(publications);
+            response.setListMessage(List.of("Publicaciones con archivos por carrera obtenidas correctamente"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener publicaciones con archivos por carrera: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/withoutfiles")
     public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFiles() {
         ResponseGetAllPublication response = new ResponseGetAllPublication();
@@ -250,6 +320,22 @@ public class PublicationController {
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Error al obtener publicaciones sin archivos: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/withoutfiles/career/{idCarrera}")
+    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFilesByCareer(@PathVariable String idCarrera) {
+        ResponseGetAllPublication response = new ResponseGetAllPublication();
+        try {
+            List<DtoPublication> publications = businessPublication.getPublicationsWithoutFilesByCareer(idCarrera);
+            response.setType("success");
+            response.setData(publications);
+            response.setListMessage(List.of("Publicaciones sin archivos por carrera obtenidas correctamente"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener publicaciones sin archivos por carrera: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

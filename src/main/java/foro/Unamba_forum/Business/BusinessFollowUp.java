@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoFollowUp;
+import foro.Unamba_forum.Dto.DtoFollowUpTotals;
 import foro.Unamba_forum.Entity.TFollowUp;
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
@@ -47,6 +48,10 @@ public class BusinessFollowUp {
         repoFollowUp.save(followUp);
     }
 
+public boolean isAlreadyFollowing(String idSeguidor, String idSeguido) {
+        return repoFollowUp.findBySeguidorIdUsuarioAndSeguidoIdUsuario(idSeguidor, idSeguido).isPresent();
+}
+
     public void unfollowUser(String idSeguidor, String idSeguido) {
         TFollowUp followUp = repoFollowUp.findBySeguidorIdUsuarioAndSeguidoIdUsuario(idSeguidor, idSeguido)
                 .orElseThrow(() -> new RuntimeException("No se encontró el seguimiento para eliminar"));
@@ -70,6 +75,16 @@ public class BusinessFollowUp {
         return following.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
+    public DtoFollowUpTotals getFollowUpTotals(String idUsuario) {
+    TUser user = repoUser.findById(idUsuario)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+    DtoFollowUpTotals totals = new DtoFollowUpTotals();
+    totals.setTotalFollowers(repoFollowUp.countBySeguido(user));
+    totals.setTotalFollowing(repoFollowUp.countBySeguidor(user));
+    return totals;
+}
+
     public long countFollowers(String idUsuario) {
         TUser user = repoUser.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -84,25 +99,27 @@ public class BusinessFollowUp {
         return repoFollowUp.countBySeguidor(user);
     }
 
-   private DtoFollowUp convertToDto(TFollowUp followUp) {
+    private DtoFollowUp convertToDto(TFollowUp followUp) {
         DtoFollowUp dto = new DtoFollowUp();
         dto.setIdSeguimiento(followUp.getIdSeguimiento());
         dto.setIdSeguidor(followUp.getSeguidor().getIdUsuario());
         dto.setIdSeguido(followUp.getSeguido().getIdUsuario());
-        dto.setFechaSeguimiento(followUp.getFechaSeguimiento().toString());
-
+        dto.setFechaSeguimiento(followUp.getFechaSeguimiento());
+    
         // Obtener datos del perfil del seguidor
         TUserProfile perfilSeguidor = repoUserProfile.findByIdUsuario(followUp.getSeguidor())
                 .orElseThrow(() -> new RuntimeException("Perfil del seguidor no encontrado"));
         dto.setNombreSeguidor(perfilSeguidor.getNombre() + " " + perfilSeguidor.getApellidos());
         dto.setAvatarSeguidor(perfilSeguidor.getFotoPerfil());
-
+        dto.setCarreraSeguidor(perfilSeguidor.getIdCarrera() != null ? perfilSeguidor.getIdCarrera().getNombre() : "Sin carrera");
+    
         // Obtener datos del perfil del seguido
         TUserProfile perfilSeguido = repoUserProfile.findByIdUsuario(followUp.getSeguido())
                 .orElseThrow(() -> new RuntimeException("Perfil del seguido no encontrado"));
         dto.setNombreSeguido(perfilSeguido.getNombre() + " " + perfilSeguido.getApellidos());
         dto.setAvatarSeguido(perfilSeguido.getFotoPerfil());
-
+        dto.setCarreraSeguido(perfilSeguido.getIdCarrera() != null ? perfilSeguido.getIdCarrera().getNombre() : "Sin carrera");
+    
         return dto;
     }
 }
