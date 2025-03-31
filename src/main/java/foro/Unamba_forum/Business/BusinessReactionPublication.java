@@ -17,10 +17,11 @@ import foro.Unamba_forum.Repository.RepoPublication;
 import foro.Unamba_forum.Repository.RepoReactionPublication;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
+import foro.Unamba_forum.Entity.TNotification;
 
 @Service
 public class BusinessReactionPublication {
-    
+
     @Autowired
     private RepoReactionPublication repoReaction;
 
@@ -31,6 +32,9 @@ public class BusinessReactionPublication {
 
     @Autowired
     private RepoUserProfile repoUserProfile;
+
+    @Autowired
+    private BusinessNotification notificacionService;
 
     // Agregar una reacción
     public void addReaction(DtoReactionPublication dtoReaction) {
@@ -46,51 +50,79 @@ public class BusinessReactionPublication {
         repoReaction.save(reaction);
         dtoReaction.setFechaReaccion(reaction.getFechaReaccion());
         dtoReaction.setIdReaccion(reaction.getIdReaccion());
+
+        // Crear notificación
+        String tipoReaccion = dtoReaction.getTipo();
+        String icono = obtenerIcono(tipoReaccion);
+
+        String mensaje = "ha reaccionado con " + tipoReaccion + " " + icono+", " +
+                "a tu publicación sobre " + reaction.getPublicacion().getTitulo() + ".";
+
+        notificacionService.createNotification(
+                reaction.getPublicacion().getUsuario().getIdUsuario(),
+                reaction.getUsuario().getIdUsuario(),
+                mensaje,
+                TNotification.TipoNotificacion.REACCION,
+                reaction.getPublicacion().getIdPublicacion());
     }
-    
-public List<DtoReactionSummary> getReactionSummary(String idPublicacion) {
-    List<DtoReactionSummary> summary = List.of(
-        createReactionSummary(idPublicacion, "Me identifica"),
-        createReactionSummary(idPublicacion, "Es increíble"),
-        createReactionSummary(idPublicacion, "Qué divertido")
-    );
-    return summary;
-}
 
-private DtoReactionSummary createReactionSummary(String idPublicacion, String tipo) {
-    long cantidad = repoReaction.countByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
-    List<DtoUserProfile> usuarios = repoReaction.findByPublicacionIdPublicacionAndTipo(idPublicacion, tipo)
-        .stream()
-        .map(reaction -> {
-            // Obtener el perfil del usuario
-            TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+    public static String obtenerIcono(String tipo) {
+        switch (tipo) {
+            case "Me identifica":
+                return "👌";
+            case "Es increíble":
+                return "✨";
+            case "Qué divertido":
+                return "😂";
+            default:
+                return "❓"; // Ícono predeterminado para valores desconocidos
+        }
+    }
 
-            // Mapear a DtoUserProfile
-            DtoUserProfile userProfile = new DtoUserProfile();
-            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-            userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
-            userProfile.setNombre(userProfileEntity.getNombre());
-            userProfile.setApellidos(userProfileEntity.getApellidos());
-            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
+    public List<DtoReactionSummary> getReactionSummary(String idPublicacion) {
+        List<DtoReactionSummary> summary = List.of(
+                createReactionSummary(idPublicacion, "Me identifica"),
+                createReactionSummary(idPublicacion, "Es increíble"),
+                createReactionSummary(idPublicacion, "Qué divertido"));
+        return summary;
+    }
 
-            return userProfile;
-        })
-        .collect(Collectors.toList());
+    private DtoReactionSummary createReactionSummary(String idPublicacion, String tipo) {
+        long cantidad = repoReaction.countByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
+        List<DtoUserProfile> usuarios = repoReaction.findByPublicacionIdPublicacionAndTipo(idPublicacion, tipo)
+                .stream()
+                .map(reaction -> {
+                    // Obtener el perfil del usuario
+                    TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
+                            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-    DtoReactionSummary summary = new DtoReactionSummary();
-    summary.setTipo(tipo);
-    summary.setCantidad(cantidad);
-    summary.setUsuarios(usuarios);
-    return summary;
-}
+                    // Mapear a DtoUserProfile
+                    DtoUserProfile userProfile = new DtoUserProfile();
+                    userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+                    userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
+                    userProfile.setNombre(userProfileEntity.getNombre());
+                    userProfile.setApellidos(userProfileEntity.getApellidos());
+                    userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+                    userProfile.setIdCarrera(
+                            userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera()
+                                    : null);
+
+                    return userProfile;
+                })
+                .collect(Collectors.toList());
+
+        DtoReactionSummary summary = new DtoReactionSummary();
+        summary.setTipo(tipo);
+        summary.setCantidad(cantidad);
+        summary.setUsuarios(usuarios);
+        return summary;
+    }
 
     // Verificar si un usuario ya reaccionó a una publicación
     public boolean hasUserReacted(String idUsuario, String idPublicacion) {
         return repoReaction.existsByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion);
     }
-    
+
     // Remover una reacción
     public void removeReaction(String idUsuario, String idPublicacion) {
         repoReaction.deleteByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion);
