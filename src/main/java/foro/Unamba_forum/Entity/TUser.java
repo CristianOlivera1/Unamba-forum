@@ -5,7 +5,9 @@ import java.sql.Timestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,6 +33,8 @@ public class TUser implements Serializable {
 
     @Column(name = "fechaActualizacion")
     private Timestamp fechaActualizacion;
-    
 
+    @OneToOne(mappedBy = "idUsuario", fetch = FetchType.LAZY)
+    private TUserProfile perfil;
+    
 }
