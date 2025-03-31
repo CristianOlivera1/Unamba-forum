@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,9 +23,9 @@ public class TUserProfile implements Serializable{
     @Column(name = "idPerfil")
     private String idPerfil;
     
-    @ManyToOne
-    @JoinColumn(name = "idUsuario", nullable = false)
-    private TUser idUsuario;
+  @OneToOne
+@JoinColumn(name = "idUsuario")
+private TUser idUsuario;
 
     //esto es para poder usar el usuario en 2 metodos diferentes de RepoUserProfile
     @Column(name = "idUsuario", insertable = false, updatable = false)
