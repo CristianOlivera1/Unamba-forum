@@ -18,7 +18,7 @@ import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
 import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TCareer;
-
+import foro.Unamba_forum.Entity.TNotification;
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.AesUtil;
@@ -43,6 +43,9 @@ public class BusinessUser {
 
     @Autowired
     private SupabaseStorageService supabaseStorageService;
+
+    @Autowired
+    private BusinessNotification notificacionService;
 
     @Transactional
     public void insert(DtoUser dtoUser) throws Exception {
@@ -121,6 +124,17 @@ public class BusinessUser {
         perfil.setFotoPortada(coverUrl);
 
         repoUserProfile.save(perfil);
+
+        String idActor = "7213bed0-624b-4301-b6f7-aa5e4106f0c0";
+        String mensaje = "⭐¡Bienvenido a la plataforma, " + dto.getNombre() +" "+ dto.getApellidos()+ "✨🎉!";
+        notificacionService.createNotification(
+            usuario.getIdUsuario(),
+            idActor,
+            mensaje,
+            TNotification.TipoNotificacion.BIENVENIDA,
+            null
+        );
+   
     }
 
     // Total de usuarios registrados
