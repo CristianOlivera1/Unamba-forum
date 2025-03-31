@@ -21,6 +21,7 @@ import foro.Unamba_forum.Repository.RepoResponseComment;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
 import foro.Unamba_forum.Service.CommentPublication.RequestsObject.RequestUpdateCP;
+import foro.Unamba_forum.Entity.TNotification;
 
 @Service
 public class BusinessCommentPublication {
@@ -42,6 +43,10 @@ public class BusinessCommentPublication {
 
     @Autowired
     private RepoReactionComment repoReactionComment;
+
+    @Autowired
+    private BusinessNotification notificacionService;
+
     // Agregar un comentario a una publicación
     public void addComment(DtoCommentPublication dtoComment) {
         TCommentPublication comment = new TCommentPublication();
@@ -58,6 +63,19 @@ public class BusinessCommentPublication {
         dtoComment.setFechaRegistro(comment.getFechaRegistro()); 
         dtoComment.setFechaActualizacion(comment.getFechaActualizacion()); 
 
+        // Crear notificación para el autor de la publicación
+        String idUsuarioPublicacion = comment.getPublicacion().getUsuario().getIdUsuario();
+        if (!idUsuarioPublicacion.equals(dtoComment.getIdUsuario())) {
+            String mensaje = "ha comentado 💬 en tu publicación sobre, " + comment.getPublicacion().getTitulo() + ".";
+            notificacionService.createNotification(
+                    idUsuarioPublicacion,
+                    dtoComment.getIdUsuario(),
+                    mensaje,
+                    TNotification.TipoNotificacion.COMENTARIO,
+                    comment.getIdComentario()
+            );
+        }
+        
     }
 
     // Obtener el total de comentarios de una publicación
