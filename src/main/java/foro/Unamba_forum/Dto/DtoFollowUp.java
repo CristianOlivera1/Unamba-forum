@@ -18,5 +18,4 @@ public class DtoFollowUp {
     private String avatarSeguido;
     private String carreraSeguido; 
     private Timestamp fechaSeguimiento;
-      
 }
