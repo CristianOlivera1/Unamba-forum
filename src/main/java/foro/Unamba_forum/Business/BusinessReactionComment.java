@@ -38,6 +38,9 @@ public class BusinessReactionComment {
     @Autowired
     private RepoUserProfile repoUserProfile;
 
+    @Autowired
+    private BusinessNotification notificacionService;
+
     // Agregar una reacción
     public void addReaction(DtoReactionComment dtoReaction) {
         TReactionComment reaction = new TReactionComment();
