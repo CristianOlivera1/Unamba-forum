@@ -22,11 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 
-import foro.Unamba_forum.Business.BusinessCommentPublication;
 import foro.Unamba_forum.Business.BusinessPublication;
-import foro.Unamba_forum.Business.BusinessReactionComment;
-import foro.Unamba_forum.Business.BusinessResponseComment;
-import foro.Unamba_forum.Dto.DtoCommentPublication;
 import foro.Unamba_forum.Dto.DtoFile;
 import foro.Unamba_forum.Dto.DtoPublication;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
