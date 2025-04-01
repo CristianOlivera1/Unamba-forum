@@ -18,7 +18,7 @@ import lombok.Setter;
 public class TReactionComment {
     
     @Id
-    @Column(name = "idReaccion", nullable = false, length = 36)
+    @Column(name = "idReaccion")
     private String idReaccion;
 
     @ManyToOne

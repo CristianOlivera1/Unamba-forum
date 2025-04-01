@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.sql.Timestamp;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoRegisterUser;
@@ -31,6 +32,8 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BusinessUser {
+     @Value("${avatar.service.url}")
+    private String avatarUrlService;
 
     @Autowired
     private RepoUser repoUser;
@@ -147,7 +150,7 @@ public class BusinessUser {
         String[] apellidos = dto.getApellidos().split(" ");
         String nombre = nombres.length > 0 ? nombres[0] : "";
         String apellido = apellidos.length > 0 ? apellidos[0] : "";
-        String avatarUrl = "https://ui-avatars.com/api/?name="
+        String avatarUrl = avatarUrlService +"?name="
                 + URLEncoder.encode(nombre + " " + apellido, StandardCharsets.UTF_8) + "&background=random";
 
         byte[] imagenBytes = Validation.descargarImagen(avatarUrl);

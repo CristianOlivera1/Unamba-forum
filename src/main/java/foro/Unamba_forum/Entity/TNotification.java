@@ -21,6 +21,7 @@ import lombok.Setter;
 @Table(name = "notificacion")
 public class TNotification implements Serializable {
   @Id
+  @Column(name = "idNotificacion")
   private String idNotificacion;
 
   @ManyToOne
@@ -31,18 +32,22 @@ public class TNotification implements Serializable {
   @JoinColumn(name = "idUsuarioActor", nullable = false) // Usuario que generó la acción
   private TUser actor;
 
+  @Column(name = "mensaje")
   private String mensaje;
 
   @Enumerated(EnumType.STRING)
   private TipoNotificacion tipo;
 
+  @Column(name = "idRecurso")
   private String idRecurso;
 
+  @Column(name = "leido")
   private boolean leido;
 
+  @Column(name = "fechaRegistro")
   private Timestamp fechaRegistro;
 
   public enum TipoNotificacion {
-    SEGUIMIENTO, REACCION, COMENTARIO,BIENVENIDA
+    SEGUIMIENTO, REACCION, COMENTARIO,BIENVENIDA,PUBLICACION
 }
 }

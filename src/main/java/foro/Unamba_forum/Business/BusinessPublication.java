@@ -13,23 +13,22 @@ import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
-import foro.Unamba_forum.Dto.DtoCommentPublication;
 import foro.Unamba_forum.Dto.DtoFile;
 import foro.Unamba_forum.Dto.DtoPublication;
 import foro.Unamba_forum.Entity.TFile;
+import foro.Unamba_forum.Entity.TFollowUp;
+import foro.Unamba_forum.Entity.TNotification;
 import foro.Unamba_forum.Entity.TPublication;
+import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCareer;
 import foro.Unamba_forum.Repository.RepoCategory;
 import foro.Unamba_forum.Repository.RepoFile;
+import foro.Unamba_forum.Repository.RepoFollowUp;
 import foro.Unamba_forum.Repository.RepoPublication;
 import foro.Unamba_forum.Repository.RepoUser;
 import jakarta.transaction.Transactional;
@@ -56,6 +55,12 @@ public class BusinessPublication {
 
     @Autowired
     private RepoCareer repoCareer;
+
+    @Autowired
+    private RepoFollowUp repoFollowUp;
+
+    @Autowired
+    private BusinessNotification notificacionService;
 
     @Autowired
     private SupabaseStorageService supabaseStorageService;
@@ -127,6 +132,31 @@ public class BusinessPublication {
                 dtoArchivo.setFechaRegistro(archivo.getFechaRegistro());
             }
         }
+        // Notificar a los seguidores del usuario
+        List<TFollowUp> seguidores = repoFollowUp.findBySeguido(publication.getUsuario());
+        for (TFollowUp seguidor : seguidores) {
+            notificacionService.createNotification(
+                    seguidor.getSeguidor().getIdUsuario(), // Usuario que recibirá la notificación
+                    publication.getUsuario().getIdUsuario(), // Usuario que realizó la publicación
+                    "ha realizado una nueva publicación 📃: " + publication.getTitulo(),
+                    TNotification.TipoNotificacion.PUBLICACION,
+                    publication.getIdPublicacion());
+        }
+
+        // Notificar a todos los usuarios de la carrera
+        List<TUser> usuariosCarrera = repoUser.findByCarrera(publication.getCarrera().getIdCarrera());
+        for (TUser usuario : usuariosCarrera) {
+            if (!usuario.getIdUsuario().equals(publication.getUsuario().getIdUsuario())) {
+                notificacionService.createNotification(
+                        usuario.getIdUsuario(), 
+                        publication.getUsuario().getIdUsuario(), 
+                        "ha realizado una nueva publicación 📃 en tu carrera: " + publication.getTitulo(),
+                        TNotification.TipoNotificacion.PUBLICACION,
+                        publication.getIdPublicacion() 
+                );
+            }
+        }
+
     }
 
     private String construirRutaArchivo(String nombreCarrera, String nombreCategoria, String idPublicacion,
@@ -152,7 +182,7 @@ public class BusinessPublication {
         }
     }
 
-    //Detalles
+    // Detalles
     public DtoPublication getPublicationDetails(String idPublicacion) {
         TPublication publication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
@@ -160,8 +190,10 @@ public class BusinessPublication {
     }
 
     // Obtener publicaciones relacionadas
-    public Page<DtoPublication> getRelatedPublications(String idCarrera, String idCategoria, String excludeIdPublicacion, Pageable pageable) {
-        Page<TPublication> relatedPublications = repoPublication.findRelatedPublications(idCarrera, idCategoria, excludeIdPublicacion, pageable);
+    public Page<DtoPublication> getRelatedPublications(String idCarrera, String idCategoria,
+            String excludeIdPublicacion, Pageable pageable) {
+        Page<TPublication> relatedPublications = repoPublication.findRelatedPublications(idCarrera, idCategoria,
+                excludeIdPublicacion, pageable);
         return relatedPublications.map(this::convertToDtoPublication);
     }
 
@@ -169,21 +201,21 @@ public class BusinessPublication {
     public void updatePublication(DtoPublication dtoPublication) {
         TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-    
+
         // Actualizar los datos de la publicación
         publication.setTitulo(dtoPublication.getTitulo());
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
         publication.setContenido(dtoPublication.getContenido());
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
-    
+
         repoPublication.save(publication);
-    
+
         dtoPublication.setIdUsuario(publication.getUsuario().getIdUsuario());
         dtoPublication.setIdCarrera(publication.getCarrera().getIdCarrera());
         dtoPublication.setFechaRegistro(publication.getFechaRegistro());
         dtoPublication.setFechaActualizacion(publication.getFechaActualizacion());
-    
+
         // Eliminar archivos existentes en Supabase y en la base de datos (si existen)
         List<TFile> existingFiles = repoArchivo.findByPublicacion(publication);
         if (!existingFiles.isEmpty()) {
@@ -192,18 +224,18 @@ public class BusinessPublication {
             }
             repoArchivo.deleteAll(existingFiles);
         }
-    
+
         // Guardar nuevos archivos si se proporcionan
         if (dtoPublication.getArchivos() != null && !dtoPublication.getArchivos().isEmpty()) {
             String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
             String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
-    
+
             for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
                 MultipartFile file = dtoArchivo.getFile();
                 if (file == null) {
                     throw new RuntimeException("El archivo no puede ser nulo");
                 }
-    
+
                 String rutaArchivo;
                 if (file.getContentType().startsWith("image")) {
                     String path;
@@ -225,7 +257,7 @@ public class BusinessPublication {
                 } else {
                     throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
                 }
-    
+
                 // Guardar archivo en la base de datos
                 TFile archivo = new TFile();
                 archivo.setIdArchivo(UUID.randomUUID().toString());
@@ -234,7 +266,7 @@ public class BusinessPublication {
                 archivo.setRutaArchivo(rutaArchivo);
                 archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
                 repoArchivo.save(archivo);
-    
+
                 dtoArchivo.setIdArchivo(archivo.getIdArchivo());
                 dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
                 dtoArchivo.setRutaArchivo(rutaArchivo);

@@ -38,9 +38,6 @@ public class BusinessReactionComment {
     @Autowired
     private RepoUserProfile repoUserProfile;
 
-    @Autowired
-    private BusinessNotification notificacionService;
-
     // Agregar una reacción
     public void addReaction(DtoReactionComment dtoReaction) {
         TReactionComment reaction = new TReactionComment();
@@ -60,7 +57,7 @@ public class BusinessReactionComment {
                             "Response not found with id: " + dtoReaction.getIdRespuesta()));
             reaction.setRespuesta(response);
         }
-        
+
         if (reaction.getComentario() == null && reaction.getRespuesta() == null) {
             throw new IllegalArgumentException("Either idComentario or idRespuesta must be provided");
         }
@@ -84,58 +81,61 @@ public class BusinessReactionComment {
     }
 
     // Verificar si un usuario ya ha reaccionado a una respuesta
-public boolean hasUserReactedToResponse(String idUsuario, String idRespuesta) {
-    return repoReaction.existsByUsuarioIdUsuarioAndRespuestaIdRespuesta(idUsuario, idRespuesta);
-}
+    public boolean hasUserReactedToResponse(String idUsuario, String idRespuesta) {
+        return repoReaction.existsByUsuarioIdUsuarioAndRespuestaIdRespuesta(idUsuario, idRespuesta);
+    }
 
     // Contar reacciones de un comentario
     public long countReactionsByComment(String idComentario) {
         return repoReaction.countByComentarioIdComentario(idComentario);
     }
 
-    //obtener los usuarios que reaccionaron a un comentario por tipo.
+    // obtener los usuarios que reaccionaron a un comentario por tipo.
     public List<DtoUserProfile> getUsersByReactionType(String idComentario, String tipo) {
-    return repoReaction.findByComentarioIdComentarioAndTipo(idComentario, tipo)
-        .stream()
-        .map(reaction -> {
-            TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+        return repoReaction.findByComentarioIdComentarioAndTipo(idComentario, tipo)
+                .stream()
+                .map(reaction -> {
+                    TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
+                            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-            DtoUserProfile userProfile = new DtoUserProfile();
-            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-            userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
-            userProfile.setNombre(userProfileEntity.getNombre());
-            userProfile.setApellidos(userProfileEntity.getApellidos());
-            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
+                    DtoUserProfile userProfile = new DtoUserProfile();
+                    userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+                    userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
+                    userProfile.setNombre(userProfileEntity.getNombre());
+                    userProfile.setApellidos(userProfileEntity.getApellidos());
+                    userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+                    userProfile.setIdCarrera(
+                            userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera()
+                                    : null);
 
-            return userProfile;
-        })
-        .collect(Collectors.toList());
-}
+                    return userProfile;
+                })
+                .collect(Collectors.toList());
+    }
 
-// Obtener los usuarios que reaccionaron a respuestas de un comentario y respuestas de respuestas por tipo.
-public List<DtoUserProfile> getUsersByReactionTypeForResponses(String idRespuesta, String tipo) {
-    return repoReaction.findByRespuestaIdRespuestaAndTipo(idRespuesta, tipo)
-        .stream()
-        .map(reaction -> {
-            TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+    // Obtener los usuarios que reaccionaron a respuestas de un comentario y
+    // respuestas de respuestas por tipo.
+    public List<DtoUserProfile> getUsersByReactionTypeForResponses(String idRespuesta, String tipo) {
+        return repoReaction.findByRespuestaIdRespuestaAndTipo(idRespuesta, tipo)
+                .stream()
+                .map(reaction -> {
+                    TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
+                            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-            DtoUserProfile userProfile = new DtoUserProfile();
-            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-            userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
-            userProfile.setNombre(userProfileEntity.getNombre());
-            userProfile.setApellidos(userProfileEntity.getApellidos());
-            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
+                    DtoUserProfile userProfile = new DtoUserProfile();
+                    userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+                    userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
+                    userProfile.setNombre(userProfileEntity.getNombre());
+                    userProfile.setApellidos(userProfileEntity.getApellidos());
+                    userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+                    userProfile.setIdCarrera(
+                            userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera()
+                                    : null);
 
-            return userProfile;
-        })
-        .collect(Collectors.toList());
-}
-
-
+                    return userProfile;
+                })
+                .collect(Collectors.toList());
+    }
 
     // Contar reacciones de una respuesta
     public long countReactionsByResponse(String idRespuesta) {

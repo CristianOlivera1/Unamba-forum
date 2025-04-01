@@ -36,7 +36,6 @@ public class BusinessReactionPublication {
     @Autowired
     private BusinessNotification notificacionService;
 
-    // Agregar una reacción
     public void addReaction(DtoReactionPublication dtoReaction) {
         TReactionPublication reaction = new TReactionPublication();
         reaction.setIdReaccion(UUID.randomUUID().toString());
@@ -51,19 +50,22 @@ public class BusinessReactionPublication {
         dtoReaction.setFechaReaccion(reaction.getFechaReaccion());
         dtoReaction.setIdReaccion(reaction.getIdReaccion());
 
-        // Crear notificación
+       // Crear notificación solo si el usuario que reacciona no es el autor de la publicación
+    String idUsuarioPublicacion = reaction.getPublicacion().getUsuario().getIdUsuario();
+    if (!idUsuarioPublicacion.equals(dtoReaction.getIdUsuario())) {
         String tipoReaccion = dtoReaction.getTipo();
         String icono = obtenerIcono(tipoReaccion);
 
-        String mensaje = "ha reaccionado con " + tipoReaccion + " " + icono+", " +
+        String mensaje = "ha reaccionado con " + tipoReaccion + " " + icono + ", " +
                 "a tu publicación sobre " + reaction.getPublicacion().getTitulo() + ".";
 
         notificacionService.createNotification(
-                reaction.getPublicacion().getUsuario().getIdUsuario(),
+                idUsuarioPublicacion,
                 reaction.getUsuario().getIdUsuario(),
                 mensaje,
                 TNotification.TipoNotificacion.REACCION,
                 reaction.getPublicacion().getIdPublicacion());
+    }
     }
 
     public static String obtenerIcono(String tipo) {
@@ -75,7 +77,7 @@ public class BusinessReactionPublication {
             case "Qué divertido":
                 return "😂";
             default:
-                return "❓"; // Ícono predeterminado para valores desconocidos
+                return "❓"; 
         }
     }
 
