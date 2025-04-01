@@ -20,12 +20,14 @@ import foro.Unamba_forum.Dto.DtoUser;
 import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TCareer;
 import foro.Unamba_forum.Entity.TNotification;
+import foro.Unamba_forum.Entity.TRol;
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.AesUtil;
 import foro.Unamba_forum.Helper.JwtUtil;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCareer;
+import foro.Unamba_forum.Repository.RepoRol;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
 import jakarta.transaction.Transactional;
@@ -43,6 +45,9 @@ public class BusinessUser {
 
     @Autowired
     private RepoCareer repoCareer;
+
+    @Autowired
+    private RepoRol repoRol;
 
     @Autowired
     private SupabaseStorageService supabaseStorageService;
@@ -96,15 +101,25 @@ public class BusinessUser {
 
     @Transactional
     public void registrarUsuario(DtoRegisterUser dto) throws Exception {
+        if (dto.getEmail().endsWith("@unamba.edu.pe")) {
+            throw new Exception("Los correos institucionales no están permitidos en el registro tradicional.");
+        }
         TUser usuario = new TUser();
         usuario.setIdUsuario(UUID.randomUUID().toString());
         usuario.setEmail(dto.getEmail());
         String contrasenhaEncriptada = AesUtil.encrypt(dto.getContrasenha());
         usuario.setContrasenha(contrasenhaEncriptada);
         usuario.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
+        
+        // Asignar rol INVITADO
+        TRol rolInvitado = repoRol.findByTipo(TRol.TipoRol.INVITADO)
+        .orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
+        usuario.setRol(rolInvitado);
+
 
         repoUser.save(usuario);
         dto.setIdUsuario(usuario.getIdUsuario());
+        dto.setIdRol(usuario.getRol().getIdRol());
         dto.setFechaRegistro(usuario.getFechaRegistro().toString());
         dto.setContrasenha(contrasenhaEncriptada);
         // Crear el perfil de usuario
@@ -181,6 +196,7 @@ public class BusinessUser {
         TUser user = tUser.get();
         DtoUser dtoUser = new DtoUser();
         dtoUser.setIdUsuario(user.getIdUsuario());
+        dtoUser.setIdRol(user.getRol().getIdRol());
         dtoUser.setEmail(user.getEmail());
         dtoUser.setContrasenha(user.getContrasenha());
         dtoUser.setFechaRegistro(user.getFechaRegistro());

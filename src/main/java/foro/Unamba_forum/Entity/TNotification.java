@@ -48,6 +48,6 @@ public class TNotification implements Serializable {
   private Timestamp fechaRegistro;
 
   public enum TipoNotificacion {
-    SEGUIMIENTO, REACCION, COMENTARIO,BIENVENIDA,PUBLICACION
+    SEGUIMIENTO, REACCION, COMENTARIO,BIENVENIDA,PUBLICACION,NOTA
 }
 }

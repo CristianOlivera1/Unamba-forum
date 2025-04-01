@@ -18,44 +18,44 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "perfilusuario")
-public class TUserProfile implements Serializable{
-     @Id
-    @Column(name = "idPerfil")
-    private String idPerfil;
-    
+public class TUserProfile implements Serializable {
+  @Id
+  @Column(name = "idPerfil")
+  private String idPerfil;
+
   @OneToOne
-@JoinColumn(name = "idUsuario")
-private TUser idUsuario;
+  @JoinColumn(name = "idUsuario")
+  private TUser idUsuario;
 
-    //esto es para poder usar el usuario en 2 metodos diferentes de RepoUserProfile
-    @Column(name = "idUsuario", insertable = false, updatable = false)
-    private String usuario;
+  // esto es para poder usar el usuario en 2 metodos diferentes de RepoUserProfile
+  @Column(name = "idUsuario", insertable = false, updatable = false)
+  private String usuario;
 
-    @ManyToOne
-    @JoinColumn(name = "idCarrera")
-    private TCareer idCarrera;
-    
-    @Column(name = "nombre")
-    private String nombre;
+  @ManyToOne
+  @JoinColumn(name = "idCarrera")
+  private TCareer idCarrera;
 
-    @Column(name = "apellidos")
-    private String apellidos;
+  @Column(name = "nombre")
+  private String nombre;
 
-    @Column(name = "descripcion", columnDefinition = "TEXT")
-    private String descripcion;    
+  @Column(name = "apellidos")
+  private String apellidos;
 
-    @Column(name = "fotoPerfil")
-    private String fotoPerfil;
+  @Column(name = "descripcion", columnDefinition = "TEXT")
+  private String descripcion;
 
-    @Column(name = "fotoPortada")
-    private String fotoPortada;
+  @Column(name = "fotoPerfil")
+  private String fotoPerfil;
 
-    @Column(name = "fechaNacimiento")
-    private Date fechaNacimiento;
+  @Column(name = "fotoPortada")
+  private String fotoPortada;
 
-    @Column(name = "genero")
-    private Byte genero;
+  @Column(name = "fechaNacimiento")
+  private Date fechaNacimiento;
 
-    @Column(name = "fechaActualizacion")
-    private Timestamp fechaActualizacion;
+  @Column(name = "genero")
+  private Byte genero;
+
+  @Column(name = "fechaActualizacion")
+  private Timestamp fechaActualizacion;
 }

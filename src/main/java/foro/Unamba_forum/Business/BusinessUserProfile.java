@@ -235,6 +235,9 @@ public class BusinessUserProfile {
         dtoUserProfile.setGenero(profile.getGenero());
         dtoUserProfile.setFechaActualizacion(profile.getFechaActualizacion());
         dtoUserProfile.setIdUsuario(profile.getIdUsuario().getIdUsuario());
+        if (profile.getIdUsuario().getRol() != null) {
+            dtoUserProfile.setRol(profile.getIdUsuario().getRol().getTipo().name());
+        }
         if (profile.getIdCarrera() != null) {
             dtoUserProfile.setIdCarrera(profile.getIdCarrera().getIdCarrera());
         }

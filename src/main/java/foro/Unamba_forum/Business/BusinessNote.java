@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoNote;
+import foro.Unamba_forum.Entity.TFollowUp;
 import foro.Unamba_forum.Entity.TNote;
+import foro.Unamba_forum.Entity.TNotification;
 import foro.Unamba_forum.Entity.TUser;
+import foro.Unamba_forum.Repository.RepoFollowUp;
 import foro.Unamba_forum.Repository.RepoNote;
 import foro.Unamba_forum.Repository.RepoUser;
 
@@ -22,6 +25,12 @@ public class BusinessNote {
 
     @Autowired
     private RepoUser repoUser;
+
+    @Autowired
+    private BusinessNotification notificacionService;
+
+    @Autowired
+    private RepoFollowUp repoFollowUp;
 
     public DtoNote createNote(String idUsuario, String contenido, String backgroundColor, String radialGradient) {
         TUser usuario = repoUser.findById(idUsuario)
@@ -41,6 +50,32 @@ public class BusinessNote {
         note.setRadialGradient(radialGradient);
     
         repoNote.save(note);
+
+         // Notificar a los seguidores del usuario
+    List<TFollowUp> seguidores = repoFollowUp.findBySeguido(usuario);
+    for (TFollowUp seguidor : seguidores) {
+        notificacionService.createNotification(
+                seguidor.getSeguidor().getIdUsuario(),
+                usuario.getIdUsuario(), 
+                "ha publicado una nueva nota: " + contenido,
+                TNotification.TipoNotificacion.NOTA,
+                note.getIdNota() 
+        );
+    }
+
+    // Notificar a todos los usuarios de la carrera
+    List<TUser> usuariosCarrera = repoUser.findByCarrera(usuario.getPerfil().getIdCarrera().getIdCarrera());
+    for (TUser usuarioCarrera : usuariosCarrera) {
+        if (!usuarioCarrera.getIdUsuario().equals(usuario.getIdUsuario())) {
+            notificacionService.createNotification(
+                    usuarioCarrera.getIdUsuario(),
+                    usuario.getIdUsuario(),
+                    "ha publicado una nueva nota en tu carrera: " + contenido,
+                    TNotification.TipoNotificacion.NOTA,
+                    note.getIdNota()
+            );
+        }
+    }
     
         return convertToDto(note);
     }
@@ -53,7 +88,6 @@ public class BusinessNote {
         return notes.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
-
     public List<DtoNote> getNotesByCareer(String idCarrera) {
         List<TNote> notes = repoNote.findByCarrera(idCarrera);
         return notes.stream().map(this::convertToDto).collect(Collectors.toList());

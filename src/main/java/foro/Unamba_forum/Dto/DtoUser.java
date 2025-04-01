@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 public class DtoUser {
 	private String idUsuario;
+	private String idRol;
 	private String email;
 	private String contrasenha;
 	private Timestamp fechaRegistro;
