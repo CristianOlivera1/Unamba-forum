@@ -195,6 +195,13 @@ public class UserController {
     public ResponseEntity<ResponseGeneric<DtoRegisterUser>> registrarUsuario(@ModelAttribute DtoRegisterUser dto) {
         ResponseGeneric<DtoRegisterUser> responseRegister = new ResponseGeneric<>();
         try {
+            
+            if (dto.getEmail().endsWith("@unamba.edu.pe")) {
+                responseRegister.setType("error");
+                responseRegister.setListMessage(List.of("El email no puede tener el dominio @unamba.edu.pe, si quiere registrase como usuario de la universidad, por favor, registrese con Google."));
+                return new ResponseEntity<>(responseRegister, HttpStatus.OK);
+            }
+
             if (businessUser.emailExists(dto.getEmail())) {
                 responseRegister.setType("error");
                 responseRegister.setListMessage(List.of("El email de usuario ya existe"));
