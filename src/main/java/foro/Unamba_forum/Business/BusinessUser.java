@@ -34,7 +34,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BusinessUser {
-     @Value("${avatar.service.url}")
+    @Value("${avatar.service.url}")
     private String avatarUrlService;
 
     @Autowired
@@ -71,6 +71,7 @@ public class BusinessUser {
         repoUser.save(tUser);
     }
 
+
     public boolean emailExists(String email) {
         return repoUser.findByEmail(email).isPresent();
     }
@@ -100,10 +101,57 @@ public class BusinessUser {
     }
 
     @Transactional
+    public void registrarUsuarioConGoogle(DtoRegisterUser dto) throws Exception {
+    
+        TUser usuario = new TUser();
+        usuario.setIdUsuario(UUID.randomUUID().toString());
+        usuario.setEmail(dto.getEmail());
+        usuario.setContrasenha(null);
+        usuario.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
+    
+        // Asignar rol según el dominio del correo
+        TRol rol = dto.getEmail().endsWith("@unamba.edu.pe")
+                ? repoRol.findByTipo(TRol.TipoRol.ESTUDIANTE).orElseThrow(() -> new Exception("Rol ESTUDIANTE no configurado"))
+                : repoRol.findByTipo(TRol.TipoRol.INVITADO).orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
+        usuario.setRol(rol);
+    
+        repoUser.save(usuario);
+
+        dto.setIdUsuario(usuario.getIdUsuario());
+        dto.setIdRol(usuario.getRol().getIdRol());
+        dto.setFechaRegistro(usuario.getFechaRegistro());
+
+        // Crear el perfil de usuario
+        TUserProfile perfil = new TUserProfile();
+        perfil.setIdPerfil(UUID.randomUUID().toString());
+        perfil.setIdUsuario(usuario);
+        perfil.setNombre(dto.getNombre());
+        perfil.setApellidos(dto.getApellidos());
+        perfil.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+    
+        TCareer carrera = dto.getIdCarrera() != null ? repoCareer.findById(dto.getIdCarrera()).orElse(null) : null;
+        perfil.setIdCarrera(carrera);
+
+        String perfilUrl = subirFotoPerfil(dto, usuario, carrera);
+        perfil.setFotoPerfil(perfilUrl);
+    
+        String coverUrl = subirFotoPortada(usuario, carrera);
+        perfil.setFotoPortada(coverUrl);
+    
+        repoUserProfile.save(perfil);
+    
+        String idActor = "7213bed0-624b-4301-b6f7-aa5e4106f0c0";
+        String mensaje = "⭐¡Bienvenido a la plataforma, " + dto.getNombre() + " " + dto.getApellidos() + "✨🎉!";
+        notificacionService.createNotification(
+                usuario.getIdUsuario(),
+                idActor,
+                mensaje,
+                TNotification.TipoNotificacion.BIENVENIDA,
+                null);
+    }
+
+    @Transactional
     public void registrarUsuario(DtoRegisterUser dto) throws Exception {
-        if (dto.getEmail().endsWith("@unamba.edu.pe")) {
-            throw new Exception("Los correos institucionales no están permitidos en el registro tradicional.");
-        }
         TUser usuario = new TUser();
         usuario.setIdUsuario(UUID.randomUUID().toString());
         usuario.setEmail(dto.getEmail());
@@ -111,17 +159,16 @@ public class BusinessUser {
         usuario.setContrasenha(contrasenhaEncriptada);
         usuario.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
         
-        // Asignar rol INVITADO
         TRol rolInvitado = repoRol.findByTipo(TRol.TipoRol.INVITADO)
         .orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
         usuario.setRol(rolInvitado);
 
-
         repoUser.save(usuario);
         dto.setIdUsuario(usuario.getIdUsuario());
         dto.setIdRol(usuario.getRol().getIdRol());
-        dto.setFechaRegistro(usuario.getFechaRegistro().toString());
+        dto.setFechaRegistro(usuario.getFechaRegistro());
         dto.setContrasenha(contrasenhaEncriptada);
+        dto.setJwtToken(new JwtUtil().generateToken(dto.getIdUsuario(), dto.getEmail()));   
         // Crear el perfil de usuario
         TUserProfile perfil = new TUserProfile();
         perfil.setIdPerfil(UUID.randomUUID().toString());
@@ -155,24 +202,36 @@ public class BusinessUser {
    
     }
 
-    // Total de usuarios registrados
     public long getTotalUsers() {
         return repoUser.count();
     }
 
     private String subirFotoPerfil(DtoRegisterUser dto, TUser usuario, TCareer carrera) throws Exception {
-        String[] nombres = dto.getNombre().split(" ");
-        String[] apellidos = dto.getApellidos().split(" ");
-        String nombre = nombres.length > 0 ? nombres[0] : "";
-        String apellido = apellidos.length > 0 ? apellidos[0] : "";
-        String avatarUrl = avatarUrlService +"?name="
-                + URLEncoder.encode(nombre + " " + apellido, StandardCharsets.UTF_8) + "&background=random";
-
-        byte[] imagenBytes = Validation.descargarImagen(avatarUrl);
-
-        String nombreCarrera = (carrera != null) ? Validation.normalizarNombreCarrera(carrera.getNombre())
-                : "sin_carrera";
+        String nombreCarrera = (carrera != null) ? Validation.normalizarNombreCarrera(carrera.getNombre()) : "sin_carrera";
         String perfilPath = nombreCarrera + "/perfil/" + usuario.getIdUsuario() + "_avatar.png";
+    
+        byte[] imagenBytes;
+    
+        if (dto.getAvatar() != null && !dto.getAvatar().isEmpty()) {
+            imagenBytes = Validation.descargarImagen(dto.getAvatar());
+            if (imagenBytes == null || imagenBytes.length == 0) {
+                throw new RuntimeException("La imagen descargada desde Google está vacía.");
+            }
+        } else {
+            // Generar una imagen predeterminada si no hay avatar
+            String[] nombres = dto.getNombre().split(" ");
+            String[] apellidos = dto.getApellidos().split(" ");
+            String nombre = nombres.length > 0 ? nombres[0] : "";
+            String apellido = apellidos.length > 0 ? apellidos[0] : "";
+            String avatarUrl = avatarUrlService + "?name="
+                    + URLEncoder.encode(nombre + " " + apellido, StandardCharsets.UTF_8) + "&background=random";
+    
+            System.out.println("Generando imagen predeterminada desde URL: " + avatarUrl);
+            imagenBytes = Validation.descargarImagen(avatarUrl);
+            if (imagenBytes == null || imagenBytes.length == 0) {
+                throw new RuntimeException("No se pudo generar la imagen predeterminada.");
+            }
+        }
 
         return supabaseStorageService.uploadFileUrl(imagenBytes, perfilPath, "image/png");
     }
@@ -250,7 +309,7 @@ public class BusinessUser {
         return true;
     }
 
-     // Obtener 5 usuarios aleatorios
+    // Obtener 5 usuarios aleatorios
     public List<DtoUserProfile> getRandomUsers(int count) {
         List<TUserProfile> profiles = repoUserProfile.findRandomUsers(count);
         return profiles.stream().map(this::convertToDtoUserProfile).collect(Collectors.toList());
