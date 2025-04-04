@@ -33,12 +33,6 @@ public class CommentPublicationController {
     @Autowired
     private BusinessCommentPublication businessComment;
 
-    @Autowired
-    private BusinessResponseComment businessResponse;
-
-    @Autowired
-    private BusinessReactionComment businessReaction;
-
     @GetMapping("/hierarchy/{idPublicacion}")
     public ResponseEntity<List<DtoCommentPublication>> getCommentHierarchy(@PathVariable String idPublicacion) {
         List<DtoCommentPublication> comments = businessComment.getCommentsByPublication(idPublicacion);
