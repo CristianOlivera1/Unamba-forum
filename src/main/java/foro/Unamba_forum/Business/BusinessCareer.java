@@ -25,11 +25,19 @@ public class BusinessCareer {
         DtoCareer dto = new DtoCareer();
         dto.setIdCarrera(carrera.getIdCarrera());
         dto.setNombre(carrera.getNombre());
+        dto.setDescripcion(carrera.getDescripcion());
+        dto.setLogo(carrera.getLogo());
         dto.setFechaRegistro(carrera.getFechaRegistro());
         return dto;
     }
     
     public long getTotalCareers() {
         return schoolRepository.count();
+    }
+
+    public DtoCareer getCareerById(String idCareer) {
+        TCareer carrera = schoolRepository.findByIdCarrera(idCareer)
+                .orElseThrow(() -> new RuntimeException("Carrera no encontrada: " + idCareer));
+        return convertToDto(carrera);
     }
 }

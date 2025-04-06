@@ -95,6 +95,11 @@ public class BusinessUser {
         DtoUser dtoUser = new DtoUser();
         dtoUser.setIdUsuario(tUser.getIdUsuario());
         dtoUser.setEmail(tUser.getEmail());
+        dtoUser.setEmail(tUser.getEmail());
+        dtoUser.setFechaActualizacion(tUser.getFechaActualizacion());
+        dtoUser.setFechaRegistro(tUser.getFechaRegistro());
+        dtoUser.setContrasenha(tUser.getContrasenha());
+        dtoUser.setIdRol(tUser.getRol().getIdRol());
         dtoUser.setJwtToken(new JwtUtil().generateToken(dtoUser.getIdUsuario(), dtoUser.getEmail()));
 
         return dtoUser;

@@ -8,6 +8,8 @@ import lombok.Setter;
 public class DtoCareer {
     private String idCarrera;
     private String nombre;
+    private String descripcion;
+    private String logo;
     private Timestamp fechaRegistro;
 
 }

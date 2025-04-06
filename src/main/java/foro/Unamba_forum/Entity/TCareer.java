@@ -20,6 +20,12 @@ public class TCareer implements Serializable {
 
     @Column(name = "nombre")
     private String nombre;
+    
+    @Column(name = "descripcion")
+    private String descripcion;
+
+    @Column(name = "logo")
+    private String logo;
 
     @Column(name = "fechaRegistro")
     private Timestamp fechaRegistro;
