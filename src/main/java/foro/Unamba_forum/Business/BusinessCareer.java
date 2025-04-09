@@ -18,6 +18,7 @@ public class BusinessCareer {
     public List<DtoCareer> getAllCareer() {
         return schoolRepository.findAll().stream()
                 .map(this::convertToDto)
+                .sorted((c1, c2) -> c1.getNombre().compareToIgnoreCase(c2.getNombre()))
                 .collect(Collectors.toList());
     }
 

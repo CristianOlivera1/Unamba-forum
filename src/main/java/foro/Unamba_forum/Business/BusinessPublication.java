@@ -24,6 +24,7 @@ import foro.Unamba_forum.Entity.TFollowUp;
 import foro.Unamba_forum.Entity.TNotification;
 import foro.Unamba_forum.Entity.TPublication;
 import foro.Unamba_forum.Entity.TUser;
+import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCareer;
 import foro.Unamba_forum.Repository.RepoCategory;
@@ -31,6 +32,7 @@ import foro.Unamba_forum.Repository.RepoFile;
 import foro.Unamba_forum.Repository.RepoFollowUp;
 import foro.Unamba_forum.Repository.RepoPublication;
 import foro.Unamba_forum.Repository.RepoUser;
+import foro.Unamba_forum.Repository.RepoUserProfile;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -61,6 +63,9 @@ public class BusinessPublication {
 
     @Autowired
     private BusinessNotification notificacionService;
+
+    @Autowired
+    private RepoUserProfile repoUserProfile;
 
     @Autowired
     private SupabaseStorageService supabaseStorageService;
@@ -341,6 +346,16 @@ public class BusinessPublication {
         dto.setContenido(publication.getContenido());
         dto.setFechaRegistro(publication.getFechaRegistro());
         dto.setFechaActualizacion(publication.getFechaActualizacion());
+
+   // Obtener el perfil del usuario
+    TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
+            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+    // Establecer datos adicionales
+    dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
+    dto.setAvatar(userProfile.getFotoPerfil());
+    dto.setNombreCarrera(publication.getCarrera().getNombre());
+    dto.setNombreCategoria(publication.getCategoria().getNombre());
 
         List<TFile> archivos = repoArchivo.findByPublicacion(publication);
         List<DtoFile> dtoArchivos = archivos.stream().map(this::convertToDtoArchivo).collect(Collectors.toList());

@@ -55,11 +55,11 @@ public class CareerController {
         }
     }
 
-    @GetMapping("/{idCareer}")
-    public ResponseEntity<ResponseGeneric<DtoCareer>> getCareerById(@PathVariable String idCareer) {
+    @GetMapping("/{idCarrera}")
+    public ResponseEntity<ResponseGeneric<DtoCareer>> getCareerById(@PathVariable String idCarrera) {
         ResponseGeneric<DtoCareer> response = new ResponseGeneric<>();
         try {
-            DtoCareer career = businessCareer.getCareerById(idCareer);
+            DtoCareer career = businessCareer.getCareerById(idCarrera);
             response.setType("success");
             response.setData(career);
             response.setListMessage(List.of("Carrera obtenida correctamente."));

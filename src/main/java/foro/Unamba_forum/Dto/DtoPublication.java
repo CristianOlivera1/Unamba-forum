@@ -9,7 +9,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DtoPublication {
-    
     private String idPublicacion;
     private String idUsuario;
     private String idCategoria;
@@ -18,5 +17,9 @@ public class DtoPublication {
     private String contenido;
     private Timestamp fechaRegistro;
     private Timestamp fechaActualizacion;
+    private String nombreCompleto;
+    private String avatar;
+    private String nombreCarrera;
+    private String nombreCategoria;
     private List<DtoFile> archivos;
 }
