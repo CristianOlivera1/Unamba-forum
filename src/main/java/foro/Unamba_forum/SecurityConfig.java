@@ -12,7 +12,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.disable()).csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/oauth2/callback/**","/career/**","/user/**","/userprofile/**","/totals/**","/publication/**").permitAll()
+                        .requestMatchers("/oauth2/callback/**","/career/**","/user/**","/userprofile/**","/totals/**","/publication/**","/reaction/**").permitAll()
                         .anyRequest().authenticated());
         return http.build();
     }

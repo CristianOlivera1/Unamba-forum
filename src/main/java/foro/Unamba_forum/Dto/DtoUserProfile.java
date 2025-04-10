@@ -18,6 +18,7 @@ public class DtoUserProfile {
     private String descripcion;
     private String fotoPerfil;
     private String fotoPortada;
+    private String email;
     private Date fechaNacimiento;
     private Byte genero;
     private Timestamp fechaActualizacion;

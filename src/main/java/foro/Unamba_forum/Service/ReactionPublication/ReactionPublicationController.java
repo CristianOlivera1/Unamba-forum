@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -51,25 +52,85 @@ public class ReactionPublicationController {
         }
     }
 
-    @DeleteMapping("/remove")
-    public ResponseEntity<ResponseGeneric<String>> removeReaction(@RequestParam String idUsuario, @RequestParam String idPublicacion) {
-        ResponseGeneric<String> response = new ResponseGeneric<>();
+    @DeleteMapping("/delete")
+    public ResponseEntity<ResponseGeneric<Void>> deleteReaction(
+            @RequestParam String idUsuario, @RequestParam String idPublicacion) {
+        ResponseGeneric<Void> response = new ResponseGeneric<>();
         try {
-            businessReaction.removeReaction(idUsuario, idPublicacion);
-
+            System.out.println("idUsuario recibido: " + idUsuario);
+            System.out.println("idPublicacion recibido: " + idPublicacion);
+    
+            businessReaction.deleteReaction(idUsuario, idPublicacion);
+    
             response.setType("success");
             response.setListMessage(List.of("Reacción eliminada correctamente"));
-            response.setData("Reacción eliminada");
-
+    
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            response.setType("error");
+            response.setListMessage(List.of(e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setType("exception");
+            response.setListMessage(List.of("Error al eliminar la reacción"));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+   
+    @PutMapping("/update")
+    public ResponseEntity<ResponseGeneric<DtoReactionPublication>> updateReaction(
+            @RequestParam String idUsuario,
+            @RequestParam String idPublicacion,
+            @RequestParam String nuevoTipo) {
+        ResponseGeneric<DtoReactionPublication> response = new ResponseGeneric<>();
+        try {
+            // Llamar al método de negocio para actualizar la reacción
+            DtoReactionPublication updatedReaction = businessReaction.updateReaction(idUsuario, idPublicacion, nuevoTipo);
+    
+            response.setType("success");
+            response.setListMessage(List.of("Reacción actualizada correctamente"));
+            response.setData(updatedReaction);
+    
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             response.setType("exception");
-            response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
+            response.setListMessage(List.of("Error al actualizar la reacción"));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @GetMapping("/get")
+    public ResponseEntity<ResponseGeneric<DtoReactionPublication>> getCurrentReaction(
+        @RequestParam String idUsuario, @RequestParam String idPublicacion) {
+        ResponseGeneric<DtoReactionPublication> response = new ResponseGeneric<>();
+        try {
+        DtoReactionPublication reaction = businessReaction.getReaction(idUsuario, idPublicacion);
+
+        if (reaction == null) {
+            response.setType("info");
+            response.setListMessage(List.of("El usuario no ha reaccionado a esta publicación"));
+            response.setType("info");
+            response.setListMessage(List.of("No hay reacciones para esta publicación"));
+            response.setData(null);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+
+        response.setType("success");
+        response.setListMessage(List.of("Reacción obtenida correctamente"));
+        response.setData(reaction);
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+        e.printStackTrace();
+        response.setType("exception");
+        response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
     @GetMapping("/countbytype")
     public ResponseEntity<ResponseGeneric<Long>> getReactionCountByType(@RequestParam String idPublicacion, @RequestParam String tipo) {
         ResponseGeneric<Long> response = new ResponseGeneric<>();

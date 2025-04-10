@@ -51,9 +51,9 @@ public class BusinessUserProfile {
 
         TUserProfile tUserProfile = new TUserProfile();
         tUserProfile.setIdPerfil(dtoUserProfile.getIdPerfil());
-        tUserProfile.setNombre(dtoUserProfile.getNombre());
+        tUserProfile.setNombre(Validation.capitalizeFirstLetter(dtoUserProfile.getNombre()));
         tUserProfile.setApellidos(dtoUserProfile.getApellidos());
-        tUserProfile.setDescripcion(dtoUserProfile.getDescripcion());
+        tUserProfile.setDescripcion(Validation.capitalizeFirstLetter( dtoUserProfile.getDescripcion()));
         tUserProfile.setFechaNacimiento(dtoUserProfile.getFechaNacimiento());
         tUserProfile.setGenero(dtoUserProfile.getGenero());
         tUserProfile.setFechaActualizacion(dtoUserProfile.getFechaActualizacion());
@@ -233,6 +233,7 @@ public class BusinessUserProfile {
         dtoUserProfile.setFotoPortada(profile.getFotoPortada());
         dtoUserProfile.setFechaNacimiento(profile.getFechaNacimiento());
         dtoUserProfile.setGenero(profile.getGenero());
+        dtoUserProfile.setEmail(profile.getIdUsuario().getEmail());
         dtoUserProfile.setFechaActualizacion(profile.getFechaActualizacion());
         dtoUserProfile.setIdUsuario(profile.getIdUsuario().getIdUsuario());
         if (profile.getIdUsuario().getRol() != null) {

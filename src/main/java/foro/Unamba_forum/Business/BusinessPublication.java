@@ -72,16 +72,24 @@ public class BusinessPublication {
 
     @Transactional
     public void insertPublication(DtoPublication dtoPublication) {
+        TUser usuario = repoUser.findById(dtoPublication.getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        TUserProfile perfil = repoUserProfile.findByIdUsuario(usuario)
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+        if (perfil.getIdCarrera() == null) {
+            throw new RuntimeException("El usuario no tiene una carrera asignada.");
+        }
+
         TPublication publication = new TPublication();
         publication.setIdPublicacion(UUID.randomUUID().toString());
-        publication.setUsuario(repoUser.findById(dtoPublication.getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
+        publication.setUsuario(usuario);
+        publication.setCarrera(perfil.getIdCarrera()); // Asignar la carrera del perfil del usuario
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
-        publication.setCarrera(repoCareer.findById(dtoPublication.getIdCarrera())
-                .orElseThrow(() -> new RuntimeException("Carrera no encontrada")));
-        publication.setTitulo(dtoPublication.getTitulo());
-        publication.setContenido(dtoPublication.getContenido());
+        publication.setTitulo(Validation.capitalizeFirstLetter(dtoPublication.getTitulo()));
+        publication.setContenido(Validation.capitalizeFirstLetter(dtoPublication.getContenido()));
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
         publication.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
 
@@ -150,15 +158,14 @@ public class BusinessPublication {
 
         // Notificar a todos los usuarios de la carrera
         List<TUser> usuariosCarrera = repoUser.findByCarrera(publication.getCarrera().getIdCarrera());
-        for (TUser usuario : usuariosCarrera) {
-            if (!usuario.getIdUsuario().equals(publication.getUsuario().getIdUsuario())) {
+        for (TUser user : usuariosCarrera) {
+            if (!user.getIdUsuario().equals(publication.getUsuario().getIdUsuario())) {
                 notificacionService.createNotification(
-                        usuario.getIdUsuario(), 
-                        publication.getUsuario().getIdUsuario(), 
+                        user.getIdUsuario(),
+                        publication.getUsuario().getIdUsuario(),
                         "ha realizado una nueva publicación 📃 en tu carrera: " + publication.getTitulo(),
                         TNotification.TipoNotificacion.PUBLICACION,
-                        publication.getIdPublicacion() 
-                );
+                        publication.getIdPublicacion());
             }
         }
 
@@ -347,15 +354,15 @@ public class BusinessPublication {
         dto.setFechaRegistro(publication.getFechaRegistro());
         dto.setFechaActualizacion(publication.getFechaActualizacion());
 
-   // Obtener el perfil del usuario
-    TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
-            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+        // Obtener el perfil del usuario
+        TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-    // Establecer datos adicionales
-    dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
-    dto.setAvatar(userProfile.getFotoPerfil());
-    dto.setNombreCarrera(publication.getCarrera().getNombre());
-    dto.setNombreCategoria(publication.getCategoria().getNombre());
+        // Establecer datos adicionales
+        dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
+        dto.setAvatar(userProfile.getFotoPerfil());
+        dto.setNombreCarrera(publication.getCarrera().getNombre());
+        dto.setNombreCategoria(publication.getCategoria().getNombre());
 
         List<TFile> archivos = repoArchivo.findByPublicacion(publication);
         List<DtoFile> dtoArchivos = archivos.stream().map(this::convertToDtoArchivo).collect(Collectors.toList());
