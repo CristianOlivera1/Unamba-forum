@@ -134,7 +134,6 @@ public class UserProfileController {
 
         try {
             DtoUserProfile dtoUserProfile = new DtoUserProfile();
-            dtoUserProfile.setIdPerfil(request.getIdPerfil());
             dtoUserProfile.setIdUsuario(request.getIdUsuario());
             dtoUserProfile.setIdCarrera(request.getIdCarrera());
             dtoUserProfile.setNombre(request.getNombre());

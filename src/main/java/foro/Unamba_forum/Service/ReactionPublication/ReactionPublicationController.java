@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessReactionPublication;
+import foro.Unamba_forum.Dto.DtoReactionAndCommentSummary;
 import foro.Unamba_forum.Dto.DtoReactionPublication;
-import foro.Unamba_forum.Dto.DtoReactionSummary;
+import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 
 @RestController
@@ -57,8 +58,6 @@ public class ReactionPublicationController {
             @RequestParam String idUsuario, @RequestParam String idPublicacion) {
         ResponseGeneric<Void> response = new ResponseGeneric<>();
         try {
-            System.out.println("idUsuario recibido: " + idUsuario);
-            System.out.println("idPublicacion recibido: " + idPublicacion);
     
             businessReaction.deleteReaction(idUsuario, idPublicacion);
     
@@ -188,7 +187,7 @@ public class ReactionPublicationController {
         }
     }
 
-    @GetMapping("/summary")
+   /*  @GetMapping("/summary")
 public ResponseEntity<ResponseGeneric<List<DtoReactionSummary>>> getReactionSummary(@RequestParam String idPublicacion) {
     ResponseGeneric<List<DtoReactionSummary>> response = new ResponseGeneric<>();
     try {
@@ -205,5 +204,41 @@ public ResponseEntity<ResponseGeneric<List<DtoReactionSummary>>> getReactionSumm
         response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}*/
+
+@GetMapping("/reactionuser")
+public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getReactionUsers(
+        @RequestParam String idPublicacion,
+        @RequestParam String tipo) {
+    ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
+    try {
+        List<DtoUserProfile> usuarios = businessReaction.getUsersByReactionType(idPublicacion, tipo);
+        response.setType("success");
+        response.setListMessage(List.of("Usuarios obtenidos correctamente"));
+        response.setData(usuarios);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener los usuarios"));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
+
+@GetMapping("/reactioncommentsummary")
+public ResponseEntity<ResponseGeneric<DtoReactionAndCommentSummary>> getReactionAndCommentSummary(
+        @RequestParam String idPublicacion) {
+    ResponseGeneric<DtoReactionAndCommentSummary> response = new ResponseGeneric<>();
+    try {
+        DtoReactionAndCommentSummary summary = businessReaction.getReactionAndCommentSummary(idPublicacion);
+        response.setType("success");
+        response.setListMessage(List.of("Resumen de reacciones y comentarios obtenido correctamente"));
+        response.setData(summary);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener el resumen de reacciones y comentarios"));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
 }

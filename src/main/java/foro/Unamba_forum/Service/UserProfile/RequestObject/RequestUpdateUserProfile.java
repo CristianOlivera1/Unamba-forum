@@ -12,8 +12,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class RequestUpdateUserProfile {
-    @NotBlank(message = "El campo \"idPerfil\" es requerido")
-    private String idPerfil;
 
     @NotBlank(message = "El campo \"idUsuario\" es requerido")
     private String idUsuario;

@@ -8,11 +8,13 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import foro.Unamba_forum.Dto.DtoReactionAndCommentSummary;
 import foro.Unamba_forum.Dto.DtoReactionPublication;
 import foro.Unamba_forum.Dto.DtoReactionSummary;
 import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TReactionPublication;
 import foro.Unamba_forum.Entity.TUserProfile;
+import foro.Unamba_forum.Repository.RepoCommentPublication;
 import foro.Unamba_forum.Repository.RepoPublication;
 import foro.Unamba_forum.Repository.RepoReactionPublication;
 import foro.Unamba_forum.Repository.RepoUser;
@@ -37,6 +39,9 @@ public class BusinessReactionPublication {
     @Autowired
     private BusinessNotification notificacionService;
 
+    @Autowired
+    private RepoCommentPublication repoCommentPublication;
+
     public void addReaction(DtoReactionPublication dtoReaction) {
         TReactionPublication reaction = new TReactionPublication();
         reaction.setIdReaccion(UUID.randomUUID().toString());
@@ -51,22 +56,23 @@ public class BusinessReactionPublication {
         dtoReaction.setFechaReaccion(reaction.getFechaReaccion());
         dtoReaction.setIdReaccion(reaction.getIdReaccion());
 
-       // Crear notificación solo si el usuario que reacciona no es el autor de la publicación
-    String idUsuarioPublicacion = reaction.getPublicacion().getUsuario().getIdUsuario();
-    if (!idUsuarioPublicacion.equals(dtoReaction.getIdUsuario())) {
-        String tipoReaccion = dtoReaction.getTipo();
-        String icono = obtenerIcono(tipoReaccion);
+        // Crear notificación solo si el usuario que reacciona no es el autor de la
+        // publicación
+        String idUsuarioPublicacion = reaction.getPublicacion().getUsuario().getIdUsuario();
+        if (!idUsuarioPublicacion.equals(dtoReaction.getIdUsuario())) {
+            String tipoReaccion = dtoReaction.getTipo();
+            String icono = obtenerIcono(tipoReaccion);
 
-        String mensaje = "ha reaccionado con " + tipoReaccion + " " + icono + ", " +
-                "a tu publicación sobre " + reaction.getPublicacion().getTitulo() + ".";
+            String mensaje = "ha reaccionado con " + tipoReaccion + " " + icono + ", " +
+                    "a tu publicación sobre " + reaction.getPublicacion().getTitulo() + ".";
 
-        notificacionService.createNotification(
-                idUsuarioPublicacion,
-                reaction.getUsuario().getIdUsuario(),
-                mensaje,
-                TNotification.TipoNotificacion.REACCION,
-                reaction.getPublicacion().getIdPublicacion());
-    }
+            notificacionService.createNotification(
+                    idUsuarioPublicacion,
+                    reaction.getUsuario().getIdUsuario(),
+                    mensaje,
+                    TNotification.TipoNotificacion.REACCION,
+                    reaction.getPublicacion().getIdPublicacion());
+        }
     }
 
     public static String obtenerIcono(String tipo) {
@@ -78,34 +84,79 @@ public class BusinessReactionPublication {
             case "Qué divertido":
                 return "😂";
             default:
-                return "❓"; 
+                return "❓";
         }
     }
 
     public DtoReactionPublication updateReaction(String idUsuario, String idPublicacion, String nuevoTipo) {
-        // Buscar la reacción existente
-        TReactionPublication reaction = repoReaction.findByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion)
+        TReactionPublication reaction = repoReaction
+                .findByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Reacción no encontrada"));
-    
-        // Actualizar el tipo de reacción
+
         reaction.setTipo(nuevoTipo);
         reaction.setFechaReaccion(new Timestamp(System.currentTimeMillis()));
-    
-        // Guardar los cambios en la base de datos
+
         repoReaction.save(reaction);
-    
-        // Convertir la entidad actualizada a DTO y devolverla
+
         return convertToDto(reaction);
     }
 
+    /* Obtener el resumen de reacciones(total) por tipo mas los usuarios que reaccionaron por tipo
     public List<DtoReactionSummary> getReactionSummary(String idPublicacion) {
         List<DtoReactionSummary> summary = List.of(
                 createReactionSummary(idPublicacion, "Me identifica"),
                 createReactionSummary(idPublicacion, "Es increíble"),
                 createReactionSummary(idPublicacion, "Qué divertido"));
         return summary;
+    } */
+
+    /*Obtener el total de reacciones mas comentarios */
+    public DtoReactionAndCommentSummary getReactionAndCommentSummary(String idPublicacion) {
+    long totalComentarios = repoCommentPublication.countByPublicacionIdPublicacion(idPublicacion);
+
+    List<DtoReactionSummary> reacciones = List.of(
+            createReactionCount(idPublicacion, "Me identifica"),
+            createReactionCount(idPublicacion, "Es increíble"),
+            createReactionCount(idPublicacion, "Qué divertido"));
+
+    DtoReactionAndCommentSummary summary = new DtoReactionAndCommentSummary();
+    summary.setReacciones(reacciones);
+    summary.setTotalComentarios(totalComentarios);
+
+    return summary;
+}
+    private DtoReactionSummary createReactionCount(String idPublicacion, String tipo) {
+        long cantidad = repoReaction.countByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
+    
+        DtoReactionSummary summary = new DtoReactionSummary();
+        summary.setTipo(tipo);
+        summary.setCantidad(cantidad);
+        return summary;
     }
 
+    // Obtener los usuarios que reaccionaron a una publicación por tipo
+    public List<DtoUserProfile> getUsersByReactionType(String idPublicacion, String tipo) {
+    return repoReaction.findByPublicacionIdPublicacionAndTipo(idPublicacion, tipo)
+            .stream()
+            .map(reaction -> {
+                TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
+                        .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+                DtoUserProfile userProfile = new DtoUserProfile();
+                userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+                userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
+                userProfile.setNombre(userProfileEntity.getNombre());
+                userProfile.setApellidos(userProfileEntity.getApellidos());
+                userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+                userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null
+                        ? userProfileEntity.getIdCarrera().getIdCarrera()
+                        : null);
+
+                return userProfile;
+            })
+            .collect(Collectors.toList());
+}
+/*
     private DtoReactionSummary createReactionSummary(String idPublicacion, String tipo) {
         long cantidad = repoReaction.countByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
         List<DtoUserProfile> usuarios = repoReaction.findByPublicacionIdPublicacionAndTipo(idPublicacion, tipo)
@@ -135,26 +186,28 @@ public class BusinessReactionPublication {
         summary.setCantidad(cantidad);
         summary.setUsuarios(usuarios);
         return summary;
-    }
+    } */
 
     @Transactional
-public void deleteReaction(String idUsuario, String idPublicacion) {
-    // Buscar la reacción existente
-    TReactionPublication reaction = repoReaction.findByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion)
-    .orElse(null);
+    public void deleteReaction(String idUsuario, String idPublicacion) {
+        // Buscar la reacción existente
+        TReactionPublication reaction = repoReaction
+                .findByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion)
+                .orElse(null);
 
-if (reaction == null) {
-System.out.println("No se encontró la reacción con idUsuario: " + idUsuario + " y idPublicacion: " + idPublicacion);
-throw new RuntimeException("Reacción no encontrada");
-}
+        if (reaction == null) {
+            System.out.println(
+                    "No se encontró la reacción con idUsuario: " + idUsuario + " y idPublicacion: " + idPublicacion);
+            throw new RuntimeException("Reacción no encontrada");
+        }
 
-    // Eliminar la reacción de la base de datos
-    repoReaction.delete(reaction);
-}
+        repoReaction.delete(reaction);
+    }
 
     // Obtener la reacción actual del usuario en una publicación
     public DtoReactionPublication getReaction(String idUsuario, String idPublicacion) {
-        TReactionPublication reaction = repoReaction.findByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion)
+        TReactionPublication reaction = repoReaction
+                .findByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion)
                 .orElse(null);
 
         if (reaction == null) {
@@ -168,7 +221,6 @@ throw new RuntimeException("Reacción no encontrada");
     public boolean hasUserReacted(String idUsuario, String idPublicacion) {
         return repoReaction.existsByUsuarioIdUsuarioAndPublicacionIdPublicacion(idUsuario, idPublicacion);
     }
-
 
     // Obtener la cantidad de reacciones por tipo
     public long getReactionCountByType(String idPublicacion, String tipo) {

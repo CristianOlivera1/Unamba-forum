@@ -1,7 +1,5 @@
 package foro.Unamba_forum.Dto;
 
-import java.util.List;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,5 +8,4 @@ import lombok.Setter;
 public class DtoReactionSummary {
     private String tipo; 
     private long cantidad; 
-    private List<DtoUserProfile> usuarios; 
 }

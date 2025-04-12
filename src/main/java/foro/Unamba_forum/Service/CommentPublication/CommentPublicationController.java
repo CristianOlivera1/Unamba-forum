@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessCommentPublication;
-import foro.Unamba_forum.Business.BusinessReactionComment;
-import foro.Unamba_forum.Business.BusinessResponseComment;
 import foro.Unamba_forum.Dto.DtoCommentPublication;
 import foro.Unamba_forum.Service.CommentPublication.RequestsObject.RequestUpdateCP;
 import foro.Unamba_forum.Service.CommentPublication.RequestsObject.RequestsInsertCP;

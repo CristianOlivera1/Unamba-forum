@@ -145,10 +145,13 @@ public class BusinessUserProfile {
 
     @Transactional
     public void update(DtoUserProfile dtoUserProfile, MultipartFile fotoPerfil, MultipartFile fotoPortada) {
-        TUserProfile profile = repoUserProfile.findById(dtoUserProfile.getIdPerfil())
-                .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
-        profile.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+     // Buscar el perfil por idUsuario
+     TUser usuario = repoUser.findById(dtoUserProfile.getIdUsuario())
+     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+TUserProfile profile = repoUserProfile.findByIdUsuario(usuario)
+     .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
 
+profile.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
         // Actualizar solo los campos proporcionados (no null)
         if (dtoUserProfile.getNombre() != null) {
             profile.setNombre(dtoUserProfile.getNombre());
@@ -196,14 +199,6 @@ public class BusinessUserProfile {
             String portadaUrl = subirImagenTransformada(fotoPortada, portadaPath);
             profile.setFotoPortada(portadaUrl);
         }
-
-        // Actualizar el usuario si es necesario
-        if (dtoUserProfile.getIdUsuario() != null) {
-            TUser usuario = repoUser.findById(dtoUserProfile.getIdUsuario())
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-            profile.setIdUsuario(usuario);
-        }
-
         repoUserProfile.save(profile);
 
     }

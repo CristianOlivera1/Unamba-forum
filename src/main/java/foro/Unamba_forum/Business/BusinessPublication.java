@@ -56,9 +56,6 @@ public class BusinessPublication {
     private RepoUser repoUser;
 
     @Autowired
-    private RepoCareer repoCareer;
-
-    @Autowired
     private RepoFollowUp repoFollowUp;
 
     @Autowired
