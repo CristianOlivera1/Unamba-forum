@@ -13,12 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
+
+import foro.Unamba_forum.Dto.DtoDetailProfile;
 import foro.Unamba_forum.Dto.DtoUserProfile;
+import foro.Unamba_forum.Dto.DtoUserProfileHover;
 import foro.Unamba_forum.Entity.TCareer;
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCareer;
+import foro.Unamba_forum.Repository.RepoFollowUp;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
 import jakarta.transaction.Transactional;
@@ -37,6 +41,9 @@ public class BusinessUserProfile {
 
     @Autowired
     private RepoUser repoUser;
+
+    @Autowired
+    private RepoFollowUp repoFollowUp;
 
     @Autowired
     private RepoCareer repoCareer;
@@ -134,6 +141,50 @@ public class BusinessUserProfile {
         }
         return null;
     }
+
+    /*Hover sobre perfil del usuario */
+    public DtoUserProfileHover getUserProfileHover(String idUsuario) {
+    TUser user = repoUser.findById(idUsuario)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+    TUserProfile profile = repoUserProfile.findByIdUsuario(user)
+            .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
+
+    long totalFollowers = repoFollowUp.countBySeguido(user);
+    long totalFollowing = repoFollowUp.countBySeguidor(user);
+
+    // Crear el DTO con la información necesaria
+    DtoUserProfileHover dto = new DtoUserProfileHover();
+    dto.setFotoPerfil(profile.getFotoPerfil());
+    dto.setFotoPortada(profile.getFotoPortada());
+    dto.setNombreCompleto(profile.getNombre() + " " + profile.getApellidos());
+    dto.setDescripcion(profile.getDescripcion());
+    dto.setTotalFollowers(totalFollowers);
+    dto.setTotalFollowing(totalFollowing);
+    dto.setRol(user.getRol() != null ? user.getRol().getTipo().name() : null);
+    dto.setCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getNombre() : "Sin carrera");
+    dto.setFechaRegistro(user.getFechaRegistro());
+
+    return dto;
+}
+
+/*Detalles del usuario */
+public DtoDetailProfile getDetailProfile(String idUsuario) {
+    TUser user = repoUser.findById(idUsuario)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+    TUserProfile profile = repoUserProfile.findByIdUsuario(user)
+            .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
+
+    DtoDetailProfile dto = new DtoDetailProfile();
+    dto.setRol(user.getRol() != null ? user.getRol().getTipo().name() : null);
+    dto.setCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getNombre() : "Sin carrera");
+    dto.setFechaRegistro(user.getFechaRegistro());
+    dto.setFechaNacimiento(profile.getFechaNacimiento());
+    dto.setGenero(profile.getGenero());
+
+    return dto;
+}
 
     public DtoUserProfile getById(String idPerfil) {
         TUserProfile profile = repoUserProfile.findById(idPerfil).orElse(null);

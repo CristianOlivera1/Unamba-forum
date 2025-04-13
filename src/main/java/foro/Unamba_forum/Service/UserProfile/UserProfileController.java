@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import foro.Unamba_forum.Business.BusinessUserProfile;
+import foro.Unamba_forum.Dto.DtoDetailProfile;
 import foro.Unamba_forum.Dto.DtoUserProfile;
+import foro.Unamba_forum.Dto.DtoUserProfileHover;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.UserProfile.RequestObject.RequestInsertUserProfile;
 import foro.Unamba_forum.Service.UserProfile.RequestObject.RequestUpdateUserProfile;
@@ -86,7 +88,8 @@ public class UserProfileController {
             DtoUserProfile dtoUserProfile = businessUserProfile.getByIdUsuario(idUsuario);
             if (dtoUserProfile != null) {
                 response.setType("success");
-                response.setListMessage(List.of("Perfil de usuario obtenido correctamente: " + dtoUserProfile.getNombre()));
+                response.setListMessage(
+                        List.of("Perfil de usuario obtenido correctamente: " + dtoUserProfile.getNombre()));
                 response.setData(dtoUserProfile);
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
@@ -120,6 +123,38 @@ public class UserProfileController {
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Error al obtener el perfil de usuario: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/hover/{idUsuario}")
+    public ResponseEntity<ResponseGeneric<DtoUserProfileHover>> getUserProfileHover(@PathVariable String idUsuario) {
+        ResponseGeneric<DtoUserProfileHover> response = new ResponseGeneric<>();
+        try {
+            DtoUserProfileHover userProfileHover = businessUserProfile.getUserProfileHover(idUsuario);
+            response.setType("success");
+            response.setListMessage(List.of("Información del perfil obtenida correctamente"));
+            response.setData(userProfileHover);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener la información del perfil: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/detail/{idUsuario}")
+    public ResponseEntity<ResponseGeneric<DtoDetailProfile>> getDetailProfile(@PathVariable String idUsuario) {
+        ResponseGeneric<DtoDetailProfile> response = new ResponseGeneric<>();
+        try {
+            DtoDetailProfile detailProfile = businessUserProfile.getDetailProfile(idUsuario);
+            response.setType("success");
+            response.setListMessage(List.of("Detalles del perfil obtenidos correctamente"));
+            response.setData(detailProfile);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener los detalles del perfil: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
