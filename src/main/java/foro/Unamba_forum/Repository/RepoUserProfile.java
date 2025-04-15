@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
@@ -15,9 +16,13 @@ import foro.Unamba_forum.Entity.TUserProfile;
 public interface RepoUserProfile extends JpaRepository<TUserProfile, String> {
     Optional<TUserProfile> findByIdUsuario(TUser idUsuario);
 
-     // Método para buscar por ID en formato String
-     Optional<TUserProfile> findByUsuario(String idUsuario);
+    // Método para buscar por ID en formato String
+    Optional<TUserProfile> findByUsuario(String idUsuario);
 
     @Query(value = "SELECT * FROM perfilusuario ORDER BY RAND() LIMIT ?1", nativeQuery = true)
     List<TUserProfile> findRandomUsers(int count);
+
+    @Query("SELECT p FROM TUserProfile p WHERE p.idCarrera.idCarrera = :idCarrera")
+    List<TUserProfile> findByIdCarrera(@Param("idCarrera") String idCarrera);
+
 }

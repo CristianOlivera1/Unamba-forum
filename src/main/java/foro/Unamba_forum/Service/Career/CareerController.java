@@ -39,22 +39,6 @@ public class CareerController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/total")
-    public ResponseEntity<ResponseGeneric<Long>>  getTotalCareers() {
-        ResponseGeneric<Long> response = new ResponseGeneric<>();
-        try {
-            long totalCareers = businessCareer.getAllCareer().size();
-            response.setType("success");
-            response.setData(totalCareers);
-            response.setListMessage(List.of("Total de carreras obtenidas correctamente."));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("exception");
-            response.setListMessage(List.of("Ocurrió un error inesperado."));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     @GetMapping("/{idCarrera}")
     public ResponseEntity<ResponseGeneric<DtoCareer>> getCareerById(@PathVariable String idCarrera) {
         ResponseGeneric<DtoCareer> response = new ResponseGeneric<>();

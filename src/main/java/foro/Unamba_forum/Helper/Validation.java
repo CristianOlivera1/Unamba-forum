@@ -51,4 +51,20 @@ public class Validation {
         return text.substring(0, 1).toUpperCase() + text.substring(1);
     }
 
+    public static String capitalizeEachWord(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String[] words = text.split("\\s+");
+        StringBuilder capitalizedText = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                capitalizedText.append(capitalizeFirstLetter(word)).append(" ");
+            }
+        }
+
+        return capitalizedText.toString().trim();
+    }
+
 }

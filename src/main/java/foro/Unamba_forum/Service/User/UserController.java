@@ -218,38 +218,23 @@ public class UserController {
             return new ResponseEntity<>(responseRegister, HttpStatus.BAD_REQUEST);
         }
     }
-    
-    //Total de usuarios registrados
-    @GetMapping("/total")
-    public ResponseEntity<ResponseGeneric<Long>> getTotalUsers() {
-        ResponseGeneric<Long> response = new ResponseGeneric<>();
-        try {
-            long totalUsers = businessUser.getTotalUsers();
-            response.setType("success");
-            response.setData(totalUsers);
-            response.setListMessage(List.of("Total de usuarios obtenidos correctamente."));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("exception");
-            response.setListMessage(List.of("Ocurrió un error inesperado."));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
-    //Sugerencias de usuarios 5
-      @GetMapping("/suggestions")
-    public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getSuggestions() {
+    //Sugerencias de usuarios 5 por carrera y por usuarios que siguen a las personas que sigo
+    @GetMapping("/suggested/{idUsuario}")
+    public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getSuggestedUsers(
+        @PathVariable String idUsuario, @RequestParam(defaultValue = "5") int count) {
         ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
         try {
-            List<DtoUserProfile> suggestions = businessUser.getRandomUsers(5);
-            response.setType("success");
-            response.setData(suggestions);
-            response.setListMessage(List.of("Sugerencias de usuarios obtenidas correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
+        List<DtoUserProfile> suggestedUsers = businessUser.getSuggestedUsers(idUsuario, count);
+        response.setType("success");
+        response.setData(suggestedUsers);
+        response.setListMessage(List.of("Usuarios sugeridos obtenidos correctamente."));
+        return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
-            response.setType("error");
-            response.setListMessage(List.of("Error al obtener sugerencias de usuarios: " + e.getMessage()));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        e.printStackTrace();
+        response.setType("exception");
+        response.setListMessage(List.of("Ocurrió un error al obtener los usuarios sugeridos."));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

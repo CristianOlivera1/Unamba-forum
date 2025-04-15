@@ -31,10 +31,6 @@ public class BusinessCareer {
         dto.setFechaRegistro(carrera.getFechaRegistro());
         return dto;
     }
-    
-    public long getTotalCareers() {
-        return schoolRepository.count();
-    }
 
     public DtoCareer getCareerById(String idCareer) {
         TCareer carrera = schoolRepository.findByIdCarrera(idCareer)

@@ -1,7 +1,9 @@
 package foro.Unamba_forum.Business;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ import foro.Unamba_forum.Helper.AesUtil;
 import foro.Unamba_forum.Helper.JwtUtil;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCareer;
+import foro.Unamba_forum.Repository.RepoFollowUp;
 import foro.Unamba_forum.Repository.RepoRol;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
@@ -48,6 +51,9 @@ public class BusinessUser {
 
     @Autowired
     private RepoRol repoRol;
+
+    @Autowired
+    private RepoFollowUp repofollowUp;
 
     @Autowired
     private SupabaseStorageService supabaseStorageService;
@@ -178,8 +184,8 @@ public class BusinessUser {
         TUserProfile perfil = new TUserProfile();
         perfil.setIdPerfil(UUID.randomUUID().toString());
         perfil.setIdUsuario(usuario);
-        perfil.setNombre(dto.getNombre());
-        perfil.setApellidos(dto.getApellidos());
+        perfil.setNombre(Validation.capitalizeEachWord(dto.getNombre()));
+        perfil.setApellidos(Validation.capitalizeEachWord(dto.getApellidos()));
         perfil.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
 
         TCareer carrera = dto.getIdCarrera() != null ? repoCareer.findById(dto.getIdCarrera()).orElse(null) : null;
@@ -205,10 +211,6 @@ public class BusinessUser {
             null
         );
    
-    }
-
-    public long getTotalUsers() {
-        return repoUser.count();
     }
 
     private String subirFotoPerfil(DtoRegisterUser dto, TUser usuario, TCareer carrera) throws Exception {
@@ -320,11 +322,74 @@ public class BusinessUser {
         return profiles.stream().map(this::convertToDtoUserProfile).collect(Collectors.toList());
     }
 
+
+    public List<DtoUserProfile> getSuggestedUsers(String idUsuario, int count) {
+        TUser currentUser = repoUser.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    
+        // Obtener los usuarios que el usuario actual está siguiendo
+        List<TUser> followingUsers = repofollowUp.findBySeguidor(currentUser)
+                .stream()
+                .map(followUp -> followUp.getSeguido())
+                .collect(Collectors.toList());
+    
+        // Obtener los usuarios que siguen a las personas que el usuario actual sigue
+        List<TUser> followersOfFollowing = followingUsers.stream()
+                .flatMap(user -> repofollowUp.findBySeguido(user).stream())
+                .map(followUp -> followUp.getSeguidor())
+                .distinct()
+                .collect(Collectors.toList());
+    
+        // Obtener los usuarios de la misma carrera
+        TUserProfile currentUserProfile = repoUserProfile.findByIdUsuario(currentUser)
+                .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
+        List<TUserProfile> sameCareerUsers = repoUserProfile.findByIdCarrera(
+                currentUserProfile.getIdCarrera() != null ? currentUserProfile.getIdCarrera().getIdCarrera() : null);
+    
+        // Combinar todas las listas y eliminar duplicados
+        List<TUserProfile> combinedUsers = new ArrayList<>();
+        combinedUsers.addAll(followingUsers.stream()
+                .map(user -> repoUserProfile.findByIdUsuario(user).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
+        combinedUsers.addAll(followersOfFollowing.stream()
+                .map(user -> repoUserProfile.findByIdUsuario(user).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
+        combinedUsers.addAll(sameCareerUsers);
+        combinedUsers = combinedUsers.stream().distinct().collect(Collectors.toList());
+    
+        combinedUsers = combinedUsers.stream()
+                .filter(profile -> !profile.getIdUsuario().getIdUsuario().equals(idUsuario))
+                .collect(Collectors.toList());
+    
+        // Si no hay suficientes usuarios sugeridos, completar con usuarios aleatorios
+        if (combinedUsers.size() < count) {
+            List<TUserProfile> randomUsers = repoUserProfile.findRandomUsers(count - combinedUsers.size());
+            combinedUsers.addAll(randomUsers);
+            combinedUsers = combinedUsers.stream().distinct().collect(Collectors.toList());
+        }
+    
+        // Seleccionar 5 usuarios aleatorios
+        Collections.shuffle(combinedUsers);
+        List<TUserProfile> suggestedUsers = combinedUsers.stream()
+                .limit(count)
+                .collect(Collectors.toList());
+    
+        // Convertir a DTO
+        return suggestedUsers.stream()
+                .map(this::convertToDtoUserProfile)
+                .collect(Collectors.toList());
+    }
+
+
     private DtoUserProfile convertToDtoUserProfile(TUserProfile profile) {
         DtoUserProfile dto = new DtoUserProfile();
         dto.setIdPerfil(profile.getIdPerfil());
         dto.setIdUsuario(profile.getIdUsuario().getIdUsuario());
         dto.setIdCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getIdCarrera() : null);
+        dto.setNombreCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getNombre() : "Sin carrera"); // Nuevo campo
+
         dto.setNombre(profile.getNombre());
         dto.setApellidos(profile.getApellidos());
         dto.setDescripcion(profile.getDescripcion());

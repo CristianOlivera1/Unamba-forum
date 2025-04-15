@@ -78,6 +78,26 @@ public class PublicationController {
         }
     }
 
+    /* Obtener las publicaciones de un usuario paginadas*/
+    @GetMapping("/user/{idUsuario}")
+    public ResponseEntity<ResponseGetAllPublication> getRecentPublicationsByUser(
+        @PathVariable String idUsuario,
+        @RequestParam(defaultValue = "0") int page) {
+        ResponseGetAllPublication response = new ResponseGetAllPublication();
+        try {
+        Page<DtoPublication> publications = businessPublication.getRecentPublicationsByUser(
+            idUsuario, PageRequest.of(page, 5, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+        response.setType("success");
+        response.setData(publications.getContent());
+        response.setListMessage(List.of("Publicaciones recientes del usuario obtenidas correctamente"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener publicaciones recientes del usuario: " + e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // para obtener una publicacion en detalles y precargar para actualizar
     @GetMapping("/details/{idPublicacion}")
     public ResponseEntity<ResponseGeneric<DtoPublication>> getPublicationDetails(@PathVariable String idPublicacion) {
@@ -173,7 +193,7 @@ public class PublicationController {
         ResponseGetAllPublication response = new ResponseGetAllPublication();
         try {
             Page<DtoPublication> publications = businessPublication.getPublicationsWithFilesPageable(
-                    PageRequest.of(page, 3, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+                    PageRequest.of(page, 6, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
             response.setType("success");
             response.setData(publications.getContent());
             response.setListMessage(List.of("Publicaciones con archivos obtenidas correctamente"));
@@ -271,69 +291,4 @@ public class PublicationController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-    @GetMapping("/withfiles")
-    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithFiles() {
-        ResponseGetAllPublication response = new ResponseGetAllPublication();
-        try {
-            List<DtoPublication> publications = businessPublication.getPublicationsWithFiles();
-            response.setType("success");
-            response.setData(publications);
-            response.setListMessage(List.of("Publicaciones con archivos obtenidas correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("error");
-            response.setListMessage(List.of("Error al obtener publicaciones con archivos: " + e.getMessage()));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/withfiles/career/{idCarrera}")
-    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithFilesByCareer(@PathVariable String idCarrera) {
-        ResponseGetAllPublication response = new ResponseGetAllPublication();
-        try {
-            List<DtoPublication> publications = businessPublication.getPublicationsWithFilesByCareer(idCarrera);
-            response.setType("success");
-            response.setData(publications);
-            response.setListMessage(List.of("Publicaciones con archivos por carrera obtenidas correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("error");
-            response.setListMessage(List.of("Error al obtener publicaciones con archivos por carrera: " + e.getMessage()));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/withoutfiles")
-    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFiles() {
-        ResponseGetAllPublication response = new ResponseGetAllPublication();
-        try {
-            List<DtoPublication> publications = businessPublication.getPublicationsWithoutFiles();
-            response.setType("success");
-            response.setData(publications);
-            response.setListMessage(List.of("Publicaciones sin archivos obtenidas correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("error");
-            response.setListMessage(List.of("Error al obtener publicaciones sin archivos: " + e.getMessage()));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/withoutfiles/career/{idCarrera}")
-    public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFilesByCareer(@PathVariable String idCarrera) {
-        ResponseGetAllPublication response = new ResponseGetAllPublication();
-        try {
-            List<DtoPublication> publications = businessPublication.getPublicationsWithoutFilesByCareer(idCarrera);
-            response.setType("success");
-            response.setData(publications);
-            response.setListMessage(List.of("Publicaciones sin archivos por carrera obtenidas correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("error");
-            response.setListMessage(List.of("Error al obtener publicaciones sin archivos por carrera: " + e.getMessage()));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
 }

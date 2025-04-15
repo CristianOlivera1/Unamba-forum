@@ -24,16 +24,18 @@ public interface RepoPublication extends JpaRepository<TPublication, String> {
       @Param("idCategoria") String idCategoria, @Param("excludeIdPublicacion") String excludeIdPublicacion,
       Pageable pageable);
 
+  @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p)")
+  List<TPublication> findByCarreraId(@Param("idCarrera") String idCarrera);
 
-    @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p)")
-    List<TPublication> findByCarreraId(@Param("idCarrera") String idCarrera);
+  @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p)")
+  Page<TPublication> findPublicationsWithFilesByCareer(@Param("idCarrera") String idCarrera, Pageable pageable);
 
-    @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p)")
-    Page<TPublication> findPublicationsWithFilesByCareer(@Param("idCarrera") String idCarrera, Pageable pageable);
+  @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND NOT EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p)")
+  Page<TPublication> findPublicationsWithoutFilesByCareer(@Param("idCarrera") String idCarrera, Pageable pageable);
 
-    @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND NOT EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p)")
-    Page<TPublication> findPublicationsWithoutFilesByCareer(@Param("idCarrera") String idCarrera, Pageable pageable);
+  @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND NOT EXISTS (SELECT a FROM TFile a WHERE a.publicacion = p)")
+  List<TPublication> findPublicationsWithoutFilesByCareer2(@Param("idCarrera") String idCarrera);
 
-    @Query("SELECT p FROM TPublication p WHERE p.carrera.idCarrera = :idCarrera AND NOT EXISTS (SELECT a FROM TFile a WHERE a.publicacion = p)")
-List<TPublication> findPublicationsWithoutFilesByCareer2(@Param("idCarrera") String idCarrera);
+  @Query("SELECT p FROM TPublication p WHERE p.usuario.idUsuario = :idUsuario ORDER BY p.fechaRegistro DESC")
+  Page<TPublication> findByUsuarioIdOrderByFechaRegistroDesc(@Param("idUsuario") String idUsuario, Pageable pageable);
 }

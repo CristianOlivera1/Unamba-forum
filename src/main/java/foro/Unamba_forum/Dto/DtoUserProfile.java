@@ -12,6 +12,7 @@ public class DtoUserProfile {
     private String idPerfil;
     private String idUsuario;
     private String idCarrera;
+    private String nombreCarrera;
     private String rol;
     private String nombre;
     private String apellidos;

@@ -305,41 +305,6 @@ public class BusinessPublication {
         repoPublication.delete(publication);
     }
 
-    // Obtener publicaciones con archivos
-    public List<DtoPublication> getPublicationsWithFiles() {
-        List<TPublication> publications = repoPublication.findAll();
-        return publications.stream()
-                .filter(pub -> !repoArchivo.findByPublicacion(pub).isEmpty())
-                .map(this::convertToDtoPublication)
-                .collect(Collectors.toList());
-    }
-
-    // Obtener publicaciones con archivos de una carrera en especifico
-    public List<DtoPublication> getPublicationsWithFilesByCareer(String idCarrera) {
-        List<TPublication> publications = repoPublication.findByCarreraId(idCarrera);
-        return publications.stream()
-                .filter(pub -> !repoArchivo.findByPublicacion(pub).isEmpty())
-                .map(this::convertToDtoPublication)
-                .collect(Collectors.toList());
-    }
-
-    // Obtener publicaciones sin archivos
-    public List<DtoPublication> getPublicationsWithoutFiles() {
-        List<TPublication> publications = repoPublication.findAll();
-        return publications.stream()
-                .filter(pub -> repoArchivo.findByPublicacion(pub).isEmpty())
-                .map(this::convertToDtoPublication)
-                .collect(Collectors.toList());
-    }
-
-    // Obtener publicaciones sin archivos de una carrera en especifico
-    public List<DtoPublication> getPublicationsWithoutFilesByCareer(String idCarrera) {
-        List<TPublication> publications = repoPublication.findPublicationsWithoutFilesByCareer2(idCarrera);
-        return publications.stream()
-                .map(this::convertToDtoPublication)
-                .collect(Collectors.toList());
-    }
-
     private DtoPublication convertToDtoPublication(TPublication publication) {
         DtoPublication dto = new DtoPublication();
         dto.setIdPublicacion(publication.getIdPublicacion());
@@ -397,6 +362,12 @@ public class BusinessPublication {
     // Obtener publicaciones sin archivos paginadas
     public Page<DtoPublication> getPublicationsWithoutFilesPageable(Pageable pageable) {
         Page<TPublication> publications = repoPublication.findPublicationsWithoutFiles(pageable);
+        return publications.map(this::convertToDtoPublication);
+    }
+
+    // Obtener publicaciones más recientes de un usuario paginadas
+    public Page<DtoPublication> getRecentPublicationsByUser(String idUsuario, Pageable pageable) {
+        Page<TPublication> publications = repoPublication.findByUsuarioIdOrderByFechaRegistroDesc(idUsuario, pageable);
         return publications.map(this::convertToDtoPublication);
     }
 
