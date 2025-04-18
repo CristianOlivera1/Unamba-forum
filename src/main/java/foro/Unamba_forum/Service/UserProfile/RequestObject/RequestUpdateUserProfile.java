@@ -16,7 +16,6 @@ public class RequestUpdateUserProfile {
     @NotBlank(message = "El campo \"idUsuario\" es requerido")
     private String idUsuario;
 
-    @NotBlank(message = "El campo \"idCarrera\" es requerido")
     private String idCarrera;
   
     private String nombre;
