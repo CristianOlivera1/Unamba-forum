@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoCommentPublication;
 import foro.Unamba_forum.Dto.DtoReactionSummaryComment;
+import foro.Unamba_forum.Dto.DtoUserComment;
 import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TCommentPublication;
 import foro.Unamba_forum.Entity.TReactionComment;
@@ -25,7 +26,7 @@ import foro.Unamba_forum.Entity.TNotification;
 
 @Service
 public class BusinessCommentPublication {
-    
+
     @Autowired
     private RepoCommentPublication repoComment;
 
@@ -59,9 +60,9 @@ public class BusinessCommentPublication {
         comment.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
         comment.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
         repoComment.save(comment);
-        dtoComment.setIdComentario(comment.getIdComentario()); 
-        dtoComment.setFechaRegistro(comment.getFechaRegistro()); 
-        dtoComment.setFechaActualizacion(comment.getFechaActualizacion()); 
+        dtoComment.setIdComentario(comment.getIdComentario());
+        dtoComment.setFechaRegistro(comment.getFechaRegistro());
+        dtoComment.setFechaActualizacion(comment.getFechaActualizacion());
 
         // Crear notificación para el autor de la publicación
         String idUsuarioPublicacion = comment.getPublicacion().getUsuario().getIdUsuario();
@@ -72,10 +73,9 @@ public class BusinessCommentPublication {
                     dtoComment.getIdUsuario(),
                     mensaje,
                     TNotification.TipoNotificacion.COMENTARIO,
-                    comment.getIdComentario()
-            );
+                    comment.getIdComentario());
         }
-        
+
     }
 
     // Obtener el total de comentarios de una publicación
@@ -83,48 +83,71 @@ public class BusinessCommentPublication {
         return repoComment.countByPublicacionIdPublicacion(idPublicacion);
     }
 
+    /* Usuarios que comentaron en la publicacion */
+    public List<DtoUserComment> getUsersWhoCommented(String idPublicacion) {
+        // Obtener los comentarios de la publicación
+        List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacion(idPublicacion);
+
+        // Mapear los comentarios a DtoUserComment
+        return comments.stream().map(comment -> {
+            TUserProfile userProfile = repoUserProfile.findByUsuario(comment.getUsuario().getIdUsuario())
+                    .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+            DtoUserComment dto = new DtoUserComment();
+            dto.setIdUsuario(comment.getUsuario().getIdUsuario());
+            dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
+            dto.setNombreCarrera(
+                    userProfile.getIdCarrera() != null ? userProfile.getIdCarrera().getNombre() : "Sin carrera");
+                    
+            dto.setAvatar(userProfile.getFotoPerfil());
+            return dto;
+        }).distinct().collect(Collectors.toList());
+    }
+
     // Obtener los comentarios de una publicación
-public List<DtoCommentPublication> getCommentsByPublication(String idPublicacion) {
-    List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacion(idPublicacion);
+    public List<DtoCommentPublication> getCommentsByPublication(String idPublicacion) {
+        List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacion(idPublicacion);
 
-    return comments.stream().map(comment -> {
-        DtoCommentPublication dto = convertToDto(comment);
+        return comments.stream().map(comment -> {
+            DtoCommentPublication dto = convertToDto(comment);
 
-        // Obtener el perfil del usuario
-        TUserProfile userProfileEntity = repoUserProfile.findByUsuario(comment.getUsuario().getIdUsuario())
-            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+            // Obtener el perfil del usuario
+            TUserProfile userProfileEntity = repoUserProfile.findByUsuario(comment.getUsuario().getIdUsuario())
+                    .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-        DtoUserProfile userProfile = new DtoUserProfile();
-        userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-        userProfile.setIdUsuario(comment.getUsuario().getIdUsuario());
-        userProfile.setNombre(userProfileEntity.getNombre());
-        userProfile.setApellidos(userProfileEntity.getApellidos());
-        userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-        userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
-        dto.setUserProfile(userProfile);
+            DtoUserProfile userProfile = new DtoUserProfile();
+            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
+            userProfile.setIdUsuario(comment.getUsuario().getIdUsuario());
+            userProfile.setNombre(userProfileEntity.getNombre());
+            userProfile.setApellidos(userProfileEntity.getApellidos());
+            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
+            userProfile.setIdCarrera(
+                    userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
+            dto.setUserProfile(userProfile);
 
-        // Obtener el número de respuestas asociadas al comentario
-        long numeroRespuestas = repoResponseComment.countByComentarioIdComentario(comment.getIdComentario());
-        dto.setNumeroRespuestas(numeroRespuestas);
+            // Obtener el número de respuestas asociadas al comentario
+            long numeroRespuestas = repoResponseComment.countByComentarioIdComentario(comment.getIdComentario());
+            dto.setNumeroRespuestas(numeroRespuestas);
 
-        // Obtener el resumen de reacciones
-        List<DtoReactionSummaryComment> reacciones = repoReactionComment.findByComentarioIdComentario(comment.getIdComentario())
-            .stream()
-            .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
-            .entrySet()
-            .stream()
-            .map(entry -> {
-                DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
-                reactionSummary.setTipo(entry.getKey());
-                reactionSummary.setCantidad(entry.getValue());
-                return reactionSummary;
-            })
-            .collect(Collectors.toList());
-        dto.setReacciones(reacciones);
+            // Obtener el resumen de reacciones
+            List<DtoReactionSummaryComment> reacciones = repoReactionComment
+                    .findByComentarioIdComentario(comment.getIdComentario())
+                    .stream()
+                    .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .map(entry -> {
+                        DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
+                        reactionSummary.setTipo(entry.getKey());
+                        reactionSummary.setCantidad(entry.getValue());
+                        return reactionSummary;
+                    })
+                    .collect(Collectors.toList());
+            dto.setReacciones(reacciones);
 
-        return dto;
-    }).collect(Collectors.toList());
-}
+            return dto;
+        }).collect(Collectors.toList());
+    }
 
     // Actualizar un comentario
     public DtoCommentPublication updateComment(RequestUpdateCP request) {
@@ -156,6 +179,5 @@ public List<DtoCommentPublication> getCommentsByPublication(String idPublicacion
         dto.setFechaActualizacion(comment.getFechaActualizacion());
         return dto;
     }
-
 
 }

@@ -39,6 +39,9 @@ public class TPublication implements Serializable  {
     @Column(name = "contenido")
     private String contenido;
 
+    @Column(name = "fijada")
+    private boolean fijada; 
+
     @Column(name = "fechaActualizacion")
     private Timestamp fechaActualizacion;
 

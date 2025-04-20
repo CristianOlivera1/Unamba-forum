@@ -101,15 +101,6 @@ public class BusinessReactionPublication {
         return convertToDto(reaction);
     }
 
-    /* Obtener el resumen de reacciones(total) por tipo mas los usuarios que reaccionaron por tipo
-    public List<DtoReactionSummary> getReactionSummary(String idPublicacion) {
-        List<DtoReactionSummary> summary = List.of(
-                createReactionSummary(idPublicacion, "Me identifica"),
-                createReactionSummary(idPublicacion, "Es increíble"),
-                createReactionSummary(idPublicacion, "Qué divertido"));
-        return summary;
-    } */
-
     /*Obtener el total de reacciones mas comentarios */
     public DtoReactionAndCommentSummary getReactionAndCommentSummary(String idPublicacion) {
     long totalComentarios = repoCommentPublication.countByPublicacionIdPublicacion(idPublicacion);
@@ -148,45 +139,14 @@ public class BusinessReactionPublication {
                 userProfile.setNombre(userProfileEntity.getNombre());
                 userProfile.setApellidos(userProfileEntity.getApellidos());
                 userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-                userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null
-                        ? userProfileEntity.getIdCarrera().getIdCarrera()
+                userProfile.setNombreCarrera(userProfileEntity.getIdCarrera() != null
+                        ? userProfileEntity.getIdCarrera().getNombre()
                         : null);
 
                 return userProfile;
             })
             .collect(Collectors.toList());
 }
-/*
-    private DtoReactionSummary createReactionSummary(String idPublicacion, String tipo) {
-        long cantidad = repoReaction.countByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
-        List<DtoUserProfile> usuarios = repoReaction.findByPublicacionIdPublicacionAndTipo(idPublicacion, tipo)
-                .stream()
-                .map(reaction -> {
-                    // Obtener el perfil del usuario
-                    TUserProfile userProfileEntity = repoUserProfile.findByUsuario(reaction.getUsuario().getIdUsuario())
-                            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-
-                    // Mapear a DtoUserProfile
-                    DtoUserProfile userProfile = new DtoUserProfile();
-                    userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-                    userProfile.setIdUsuario(reaction.getUsuario().getIdUsuario());
-                    userProfile.setNombre(userProfileEntity.getNombre());
-                    userProfile.setApellidos(userProfileEntity.getApellidos());
-                    userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-                    userProfile.setIdCarrera(
-                            userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera()
-                                    : null);
-
-                    return userProfile;
-                })
-                .collect(Collectors.toList());
-
-        DtoReactionSummary summary = new DtoReactionSummary();
-        summary.setTipo(tipo);
-        summary.setCantidad(cantidad);
-        summary.setUsuarios(usuarios);
-        return summary;
-    } */
 
     @Transactional
     public void deleteReaction(String idUsuario, String idPublicacion) {
@@ -230,12 +190,6 @@ public class BusinessReactionPublication {
     // Obtener el total de reacciones
     public long getTotalReactions(String idPublicacion) {
         return repoReaction.countByPublicacionIdPublicacion(idPublicacion);
-    }
-
-    // Obtener las personas que reaccionaron por tipo
-    public List<DtoReactionPublication> getReactionsByType(String idPublicacion, String tipo) {
-        List<TReactionPublication> reactions = repoReaction.findByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
-        return reactions.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     // Convertir entidad a DTO

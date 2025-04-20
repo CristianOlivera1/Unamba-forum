@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Page;
 
 import foro.Unamba_forum.Business.BusinessPublication;
 import foro.Unamba_forum.Dto.DtoFile;
+import foro.Unamba_forum.Dto.DtoFixPublication;
 import foro.Unamba_forum.Dto.DtoPublication;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.Publication.RequestsObject.RequestInsertPublication;
@@ -238,6 +240,22 @@ public class PublicationController {
         } catch (Exception e) {
             response.setType("error");
             response.setListMessage(List.of("Error al obtener publicaciones sin archivos: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+   @PutMapping("/fix")
+    public ResponseEntity<ResponseGeneric<String>> fixPublication(@RequestBody DtoFixPublication dtoFixPublication) {
+        ResponseGeneric<String> response = new ResponseGeneric<>();
+        try {
+            businessPublication.fixPublication(dtoFixPublication);
+            response.setType("success");
+            response.setListMessage(List.of("Publicación actualizada correctamente"));
+            response.setData("La publicación ha sido " + (dtoFixPublication.isFijada() ? "fijada" : "desfijada"));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al actualizar la publicación: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

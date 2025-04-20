@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import foro.Unamba_forum.Dto.DtoFile;
+import foro.Unamba_forum.Dto.DtoFixPublication;
 import foro.Unamba_forum.Dto.DtoPublication;
 import foro.Unamba_forum.Entity.TFile;
 import foro.Unamba_forum.Entity.TFollowUp;
@@ -292,6 +293,18 @@ public class BusinessPublication {
                 System.out.println("No se pudo eliminar el archivo anterior: " + oldPath);
             }
         }
+    }
+
+    /* Fijar o desfijar publicacion */
+    @Transactional
+    public void fixPublication(DtoFixPublication dtoFixPublication) {
+        TPublication publication = repoPublication.findById(dtoFixPublication.getIdPublicacion())
+                .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
+
+        publication.setFijada(dtoFixPublication.isFijada());
+        publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+
+        repoPublication.save(publication);
     }
 
     @Transactional

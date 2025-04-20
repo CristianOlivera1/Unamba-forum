@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessCommentPublication;
 import foro.Unamba_forum.Dto.DtoCommentPublication;
+import foro.Unamba_forum.Dto.DtoUserComment;
 import foro.Unamba_forum.Service.CommentPublication.RequestsObject.RequestUpdateCP;
 import foro.Unamba_forum.Service.CommentPublication.RequestsObject.RequestsInsertCP;
 import foro.Unamba_forum.Service.CommentPublication.ResponseObject.ResponseGetAllCP;
@@ -70,6 +71,23 @@ public class CommentPublicationController {
             e.printStackTrace();
             response.setType("exception");
             response.setListMessage(List.of("Ocurrió un error al agregar el comentario"));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    /*usuarios que comentaron en una publicacion */
+     @GetMapping("/users/{idPublicacion}")
+    public ResponseEntity<ResponseGeneric<List<DtoUserComment>>> getUsersWhoCommented(
+            @PathVariable String idPublicacion) {
+        ResponseGeneric<List<DtoUserComment>> response = new ResponseGeneric<>();
+        try {
+            List<DtoUserComment> users = businessComment.getUsersWhoCommented(idPublicacion);
+            response.setType("success");
+            response.setListMessage(List.of("Usuarios que comentaron obtenidos correctamente"));
+            response.setData(users);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener los usuarios: " + e.getMessage()));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

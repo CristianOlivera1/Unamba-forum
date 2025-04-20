@@ -168,44 +168,6 @@ public class ReactionPublicationController {
         }
     }
 
-    @GetMapping("/bytype")
-    public ResponseEntity<ResponseGeneric<List<DtoReactionPublication>>> getReactionsByType(@RequestParam String idPublicacion, @RequestParam String tipo) {
-        ResponseGeneric<List<DtoReactionPublication>> response = new ResponseGeneric<>();
-        try {
-            List<DtoReactionPublication> reactions = businessReaction.getReactionsByType(idPublicacion, tipo);
-
-            response.setType("success");
-            response.setListMessage(List.of("Reacciones obtenidas correctamente"));
-            response.setData(reactions);
-
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.setType("exception");
-            response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-   /*  @GetMapping("/summary")
-public ResponseEntity<ResponseGeneric<List<DtoReactionSummary>>> getReactionSummary(@RequestParam String idPublicacion) {
-    ResponseGeneric<List<DtoReactionSummary>> response = new ResponseGeneric<>();
-    try {
-        List<DtoReactionSummary> summary = businessReaction.getReactionSummary(idPublicacion);
-
-        response.setType("success");
-        response.setListMessage(List.of("Resumen de reacciones obtenido correctamente"));
-        response.setData(summary);
-
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    } catch (Exception e) {
-        e.printStackTrace();
-        response.setType("exception");
-        response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-}*/
-
 @GetMapping("/reactionuser")
 public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getReactionUsers(
         @RequestParam String idPublicacion,
