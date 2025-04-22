@@ -218,6 +218,7 @@ public class BusinessUserProfile {
 
         // Crear el DTO con la información necesaria
         DtoUserProfileHover dto = new DtoUserProfileHover();
+        dto.setIdUsuario(user.getIdUsuario());
         dto.setFotoPerfil(profile.getFotoPerfil());
         dto.setFotoPortada(profile.getFotoPortada());
         dto.setNombreCompleto(profile.getNombre() + " " + profile.getApellidos());
