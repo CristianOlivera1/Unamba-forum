@@ -75,6 +75,42 @@ public class BusinessReactionComment {
 
     }
 
+    // Actualizar una reacción
+    public DtoReactionComment updateReaction(String idUsuario, String idComentario, String idRespuesta, String nuevoTipo) {
+        // Buscar la reacción existente por idUsuario y idComentario o idRespuesta
+        TReactionComment reaction = null;
+    
+        if (idComentario != null) {
+            reaction = repoReaction.findByUsuarioIdUsuarioAndComentarioIdComentario(idUsuario, idComentario)
+                    .orElseThrow(() -> new RuntimeException("Reacción no encontrada para el comentario especificado"));
+        } else if (idRespuesta != null) {
+            reaction = repoReaction.findByUsuarioIdUsuarioAndRespuestaIdRespuesta(idUsuario, idRespuesta)
+                    .orElseThrow(() -> new RuntimeException("Reacción no encontrada para la respuesta especificada"));
+        } else {
+            throw new IllegalArgumentException("Debe proporcionarse idComentario o idRespuesta");
+        }
+    
+        // Actualizar el tipo de reacción y la fecha
+        reaction.setTipo(nuevoTipo);
+        reaction.setFechaReaccion(new Timestamp(System.currentTimeMillis()));
+    
+        // Guardar los cambios en la base de datos
+        repoReaction.save(reaction);
+    
+        // Convertir la reacción actualizada a DTO y devolverla
+        return convertToDto(reaction);
+    }
+    private DtoReactionComment convertToDto(TReactionComment reaction) {
+        DtoReactionComment dto = new DtoReactionComment();
+        dto.setIdReaccion(reaction.getIdReaccion());
+        dto.setIdComentario(reaction.getComentario() != null ? reaction.getComentario().getIdComentario() : null);
+        dto.setIdRespuesta(reaction.getRespuesta() != null ? reaction.getRespuesta().getIdRespuesta() : null);
+        dto.setIdUsuario(reaction.getUsuario().getIdUsuario());
+        dto.setTipo(reaction.getTipo());
+        dto.setFechaReaccion(reaction.getFechaReaccion());
+        return dto;
+    }
+
     // Verificar si un usuario ya ha reaccionado a un comentario
     public boolean hasUserReactedToComment(String idUsuario, String idComentario) {
         return repoReaction.existsByUsuarioIdUsuarioAndComentarioIdComentario(idUsuario, idComentario);
@@ -113,8 +149,26 @@ public class BusinessReactionComment {
                 .collect(Collectors.toList());
     }
 
-    // Obtener los usuarios que reaccionaron a respuestas de un comentario y
-    // respuestas de respuestas por tipo.
+    /*Obtener las reacciones de un usuario en comentarios al cargar en el frontend  */
+    public List<DtoReactionComment> getReactionsByUserAndPublication(String idUsuario, String idPublicacion) {
+        // Buscar todas las reacciones del usuario en comentarios de la publicación
+        return repoReaction.findByUsuarioIdUsuario(idUsuario)
+                .stream()
+                .filter(reaction -> reaction.getComentario() != null && 
+                                    reaction.getComentario().getPublicacion().getIdPublicacion().equals(idPublicacion)) // Filtrar por publicación
+                .map(reaction -> {
+                    DtoReactionComment dto = new DtoReactionComment();
+                    dto.setIdReaccion(reaction.getIdReaccion());
+                    dto.setIdComentario(reaction.getComentario().getIdComentario());
+                    dto.setTipo(reaction.getTipo());
+                    dto.setIdUsuario(reaction.getUsuario().getIdUsuario());
+                    dto.setFechaReaccion(reaction.getFechaReaccion());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // Obtener los usuarios que reaccionaron a respuestas de un comentario y respuestas de respuestas por tipo.
     public List<DtoUserProfile> getUsersByReactionTypeForResponses(String idRespuesta, String tipo) {
         return repoReaction.findByRespuestaIdRespuestaAndTipo(idRespuesta, tipo)
                 .stream()

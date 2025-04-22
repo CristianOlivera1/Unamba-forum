@@ -56,8 +56,7 @@ public class BusinessReactionPublication {
         dtoReaction.setFechaReaccion(reaction.getFechaReaccion());
         dtoReaction.setIdReaccion(reaction.getIdReaccion());
 
-        // Crear notificación solo si el usuario que reacciona no es el autor de la
-        // publicación
+        // Crear notificación solo si el usuario que reacciona no es el autor de la publicación
         String idUsuarioPublicacion = reaction.getPublicacion().getUsuario().getIdUsuario();
         if (!idUsuarioPublicacion.equals(dtoReaction.getIdUsuario())) {
             String tipoReaccion = dtoReaction.getTipo();

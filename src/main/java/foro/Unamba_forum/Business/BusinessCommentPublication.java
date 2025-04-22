@@ -98,7 +98,7 @@ public class BusinessCommentPublication {
             dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
             dto.setNombreCarrera(
                     userProfile.getIdCarrera() != null ? userProfile.getIdCarrera().getNombre() : "Sin carrera");
-                    
+
             dto.setAvatar(userProfile.getFotoPerfil());
             return dto;
         }).distinct().collect(Collectors.toList());
@@ -115,15 +115,9 @@ public class BusinessCommentPublication {
             TUserProfile userProfileEntity = repoUserProfile.findByUsuario(comment.getUsuario().getIdUsuario())
                     .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-            DtoUserProfile userProfile = new DtoUserProfile();
-            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-            userProfile.setIdUsuario(comment.getUsuario().getIdUsuario());
-            userProfile.setNombre(userProfileEntity.getNombre());
-            userProfile.setApellidos(userProfileEntity.getApellidos());
-            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-            userProfile.setIdCarrera(
-                    userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
-            dto.setUserProfile(userProfile);
+            // Agregar solo el nombre completo y el avatar
+            dto.setNombreCompleto(userProfileEntity.getNombre() + " " + userProfileEntity.getApellidos());
+            dto.setAvatar(userProfileEntity.getFotoPerfil());
 
             // Obtener el número de respuestas asociadas al comentario
             long numeroRespuestas = repoResponseComment.countByComentarioIdComentario(comment.getIdComentario());
@@ -133,22 +127,20 @@ public class BusinessCommentPublication {
             List<DtoReactionSummaryComment> reacciones = repoReactionComment
                     .findByComentarioIdComentario(comment.getIdComentario())
                     .stream()
-                    .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
-                    .entrySet()
-                    .stream()
-                    .map(entry -> {
+                    .map(reaction -> {
                         DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
-                        reactionSummary.setTipo(entry.getKey());
-                        reactionSummary.setCantidad(entry.getValue());
+                        reactionSummary.setIdReaccion(reaction.getIdReaccion()); // Incluye el ID de la reacción
+                        reactionSummary.setTipo(reaction.getTipo());
+                        reactionSummary.setCantidad(1); // Cada reacción individual cuenta como 1
                         return reactionSummary;
                     })
                     .collect(Collectors.toList());
             dto.setReacciones(reacciones);
-
             return dto;
         }).collect(Collectors.toList());
     }
 
+    
     // Actualizar un comentario
     public DtoCommentPublication updateComment(RequestUpdateCP request) {
         TCommentPublication comment = repoComment.findById(request.getIdComentario())

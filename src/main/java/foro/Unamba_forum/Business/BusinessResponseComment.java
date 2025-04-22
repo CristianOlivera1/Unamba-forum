@@ -76,38 +76,32 @@ public class BusinessResponseComment {
     // Obtener respuestas de un comentario con perfil de usuario y reacciones
     public List<DtoResponseComment> getResponsesByCommentWithDetails(String idComentario) {
         List<TResponseComment> responses = repoResponse.findByComentarioIdComentario(idComentario);
-
+    
         return responses.stream().map(response -> {
             DtoResponseComment dto = convertToDto(response);
-
+    
             // Obtener el perfil del usuario
             TUserProfile userProfileEntity = repoUserProfile.findByUsuario(response.getUsuario().getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-
-            DtoUserProfile userProfile = new DtoUserProfile();
-            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-            userProfile.setIdUsuario(response.getUsuario().getIdUsuario());
-            userProfile.setNombre(userProfileEntity.getNombre());
-            userProfile.setApellidos(userProfileEntity.getApellidos());
-            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
-            dto.setUserProfile(userProfile);
-
+                    .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+    
+            dto.setNombreCompleto(userProfileEntity.getNombre() + " " + userProfileEntity.getApellidos());
+            dto.setAvatar(userProfileEntity.getFotoPerfil());
+    
             // Obtener el resumen de reacciones
             List<DtoReactionSummaryComment> reacciones = repoReactionComment.findByRespuestaIdRespuesta(response.getIdRespuesta())
-                .stream()
-                .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
-                .entrySet()
-                .stream()
-                .map(entry -> {
-                    DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
-                    reactionSummary.setTipo(entry.getKey());
-                    reactionSummary.setCantidad(entry.getValue());
-                    return reactionSummary;
-                })
-                .collect(Collectors.toList());
+                    .stream()
+                    .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .map(entry -> {
+                        DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
+                        reactionSummary.setTipo(entry.getKey());
+                        reactionSummary.setCantidad(entry.getValue());
+                        return reactionSummary;
+                    })
+                    .collect(Collectors.toList());
             dto.setReacciones(reacciones);
-
+    
             return dto;
         }).collect(Collectors.toList());
     }
@@ -115,37 +109,32 @@ public class BusinessResponseComment {
     // Obtener respuestas hijas de una respuesta
     public List<DtoResponseComment> getResponsesByParent(String idRespuestaPadre) {
         List<TResponseComment> responses = repoResponse.findByRespuestaPadreIdRespuesta(idRespuestaPadre);
+    
         return responses.stream().map(response -> {
             DtoResponseComment dto = convertToDto(response);
-
+    
             // Obtener el perfil del usuario
             TUserProfile userProfileEntity = repoUserProfile.findByUsuario(response.getUsuario().getIdUsuario())
-            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-
-            DtoUserProfile userProfile = new DtoUserProfile();
-            userProfile.setIdPerfil(userProfileEntity.getIdPerfil());
-            userProfile.setIdUsuario(response.getUsuario().getIdUsuario());
-            userProfile.setNombre(userProfileEntity.getNombre());
-            userProfile.setApellidos(userProfileEntity.getApellidos());
-            userProfile.setFotoPerfil(userProfileEntity.getFotoPerfil());
-            userProfile.setIdCarrera(userProfileEntity.getIdCarrera() != null ? userProfileEntity.getIdCarrera().getIdCarrera() : null);
-            dto.setUserProfile(userProfile);
-
+                    .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+    
+            dto.setNombreCompleto(userProfileEntity.getNombre() + " " + userProfileEntity.getApellidos());
+            dto.setAvatar(userProfileEntity.getFotoPerfil());
+    
             // Obtener el resumen de reacciones
             List<DtoReactionSummaryComment> reacciones = repoReactionComment.findByRespuestaIdRespuesta(response.getIdRespuesta())
-            .stream()
-            .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
-            .entrySet()
-            .stream()
-            .map(entry -> {
-                DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
-                reactionSummary.setTipo(entry.getKey());
-                reactionSummary.setCantidad(entry.getValue());
-                return reactionSummary;
-            })
-            .collect(Collectors.toList());
+                    .stream()
+                    .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .map(entry -> {
+                        DtoReactionSummaryComment reactionSummary = new DtoReactionSummaryComment();
+                        reactionSummary.setTipo(entry.getKey());
+                        reactionSummary.setCantidad(entry.getValue());
+                        return reactionSummary;
+                    })
+                    .collect(Collectors.toList());
             dto.setReacciones(reacciones);
-
+    
             return dto;
         }).collect(Collectors.toList());
     }
