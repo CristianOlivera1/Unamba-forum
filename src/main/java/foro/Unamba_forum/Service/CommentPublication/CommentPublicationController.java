@@ -92,7 +92,7 @@ public class CommentPublicationController {
         }
     }
 
-    // Endpoint para obtener todos los comentarios de una publicación
+    // Endpoint para obtener todos los comentarios de una publicación con sus usuarios
     @GetMapping("/list/{idPublicacion}")
     public ResponseEntity<ResponseGetAllCP> getCommentsByPublication(@PathVariable String idPublicacion) {
         ResponseGetAllCP response = new ResponseGetAllCP();
