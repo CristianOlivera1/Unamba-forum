@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DtoUserProfileHover {
+    private String idUsuario;
     private String fotoPerfil;
     private String fotoPortada;
     private String nombreCompleto;

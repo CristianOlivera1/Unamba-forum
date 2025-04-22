@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DtoReactionSummaryComment {
+    private String idReaccion;
     private String tipo; 
     private long cantidad; 
 }

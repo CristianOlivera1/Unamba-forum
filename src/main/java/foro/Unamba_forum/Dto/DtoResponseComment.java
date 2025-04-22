@@ -2,7 +2,6 @@ package foro.Unamba_forum.Dto;
 
 import java.sql.Timestamp;
 import java.util.List;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,7 +15,8 @@ public class DtoResponseComment {
     private String contenido;
     private Timestamp fechaRegistro;
     private List<DtoResponseComment> respuestasHijas; // Respuestas a respuestas
-    private DtoUserProfile userProfile;
+    private String nombreCompleto;
+    private String avatar;
     private List<DtoReactionSummaryComment> reacciones;
 
 }
