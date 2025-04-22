@@ -87,7 +87,6 @@ public class BusinessResponseComment {
             dto.setNombreCompleto(userProfileEntity.getNombre() + " " + userProfileEntity.getApellidos());
             dto.setAvatar(userProfileEntity.getFotoPerfil());
     
-            // Obtener el resumen de reacciones
             List<DtoReactionSummaryComment> reacciones = repoReactionComment.findByRespuestaIdRespuesta(response.getIdRespuesta())
                     .stream()
                     .collect(Collectors.groupingBy(TReactionComment::getTipo, Collectors.counting()))
