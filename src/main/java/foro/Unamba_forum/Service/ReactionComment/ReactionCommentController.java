@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import foro.Unamba_forum.Business.BusinessReactionComment;
@@ -31,23 +33,6 @@ public class ReactionCommentController {
     public ResponseEntity<ResponseInsertReactionC> addReaction(@ModelAttribute RequestsInsertReactionC request) {
         ResponseInsertReactionC response = new ResponseInsertReactionC();
         try {
-            boolean alreadyReacted = false;
-
-            // Verificar si el usuario ya reaccionó al comentario
-            if (request.getIdComentario() != null) {
-                alreadyReacted = businessReaction.hasUserReactedToComment(request.getIdUsuario(), request.getIdComentario());
-            }
-    
-            // Verificar si el usuario ya reaccionó a la respuesta
-            if (request.getIdRespuesta() != null) {
-                alreadyReacted = businessReaction.hasUserReactedToResponse(request.getIdUsuario(), request.getIdRespuesta());
-            }
-    
-            if (alreadyReacted) {
-                response.setType("error");
-                response.setListMessage(List.of("El usuario ya ha reaccionado a este elemento"));
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
 
             DtoReactionComment dtoReaction = new DtoReactionComment();
             dtoReaction.setIdComentario(request.getIdComentario());
@@ -70,6 +55,26 @@ public class ReactionCommentController {
         }
     }
 
+    /*Actualizar una reaccion a un comentario o respuesta */
+    @PutMapping("/update")
+    public ResponseEntity<ResponseGeneric<DtoReactionComment>> updateReaction(
+            @RequestParam String idUsuario,
+            @RequestParam(required = false) String idComentario,
+            @RequestParam(required = false) String idRespuesta,
+            @RequestParam String nuevoTipo) {
+        ResponseGeneric<DtoReactionComment> response = new ResponseGeneric<>();
+        try {
+            DtoReactionComment updatedReaction = businessReaction.updateReaction(idUsuario, idComentario, idRespuesta, nuevoTipo);
+            response.setType("success");
+            response.setListMessage(List.of("Reacción actualizada correctamente"));
+            response.setData(updatedReaction);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al actualizar la reacción: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     // Total de reacciones de un comentario
     @GetMapping("/count/comment/{idComentario}")
     public ResponseEntity<ResponseGeneric<Long>> countReactionsByComment(@PathVariable String idComentario) {
@@ -133,7 +138,6 @@ public class ReactionCommentController {
         }
     }
 
-
     @GetMapping("/users/response/{idRespuesta}/{tipo}")
     public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getUsersByReactionTypeForResponses(
         @PathVariable String idRespuesta, @PathVariable String tipo) {
@@ -158,7 +162,23 @@ public class ReactionCommentController {
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+    // Obtener reacciones de un usuario a comentarios de una publicación    
+    @GetMapping("/userreactions")
+    public ResponseEntity<ResponseGeneric<List<DtoReactionComment>>> getReactionsByUserAndPublication(
+            @RequestParam String idUsuario, @RequestParam String idPublicacion) {
+        ResponseGeneric<List<DtoReactionComment>> response = new ResponseGeneric<>();
+        try {
+            List<DtoReactionComment> reactions = businessReaction.getReactionsByUserAndPublication(idUsuario, idPublicacion);
+            response.setType("success");
+            response.setListMessage(List.of("Reacciones obtenidas correctamente"));
+            response.setData(reactions);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.setType("error");
+            response.setListMessage(List.of("Error al obtener las reacciones: " + e.getMessage()));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     @DeleteMapping("/remove/{idReaction}")
     public ResponseEntity<ResponseGeneric<String>> removeReaction(@PathVariable String idReaction) {
         ResponseGeneric<String> response = new ResponseGeneric<>();
