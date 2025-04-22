@@ -88,7 +88,7 @@ public class PublicationController {
         ResponseGetAllPublication response = new ResponseGetAllPublication();
         try {
         Page<DtoPublication> publications = businessPublication.getRecentPublicationsByUser(
-            idUsuario, PageRequest.of(page, 5, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+            idUsuario, PageRequest.of(page, 6, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
         response.setType("success");
         response.setData(publications.getContent());
         response.setListMessage(List.of("Publicaciones recientes del usuario obtenidas correctamente"));
