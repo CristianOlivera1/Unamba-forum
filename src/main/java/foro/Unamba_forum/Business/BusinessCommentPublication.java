@@ -83,30 +83,37 @@ public class BusinessCommentPublication {
         return repoComment.countByPublicacionIdPublicacion(idPublicacion);
     }
 
-    /* Usuarios que comentaron en la publicacion */
+    /* Usuarios que comentaron en la publicacion (hover sobre total comentarios) */
     public List<DtoUserComment> getUsersWhoCommented(String idPublicacion) {
-        // Obtener los comentarios de la publicación
-        List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacion(idPublicacion);
-
-        // Mapear los comentarios a DtoUserComment
-        return comments.stream().map(comment -> {
-            TUserProfile userProfile = repoUserProfile.findByUsuario(comment.getUsuario().getIdUsuario())
-                    .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-
-            DtoUserComment dto = new DtoUserComment();
-            dto.setIdUsuario(comment.getUsuario().getIdUsuario());
-            dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
-            dto.setNombreCarrera(
-                    userProfile.getIdCarrera() != null ? userProfile.getIdCarrera().getNombre() : "Sin carrera");
-
-            dto.setAvatar(userProfile.getFotoPerfil());
-            return dto;
-        }).distinct().collect(Collectors.toList());
+        List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacionOrderByFechaRegistroDesc(idPublicacion);
+    
+        // Usar un Map para evitar duplicados basados en idUsuario
+        return comments.stream()
+                .map(comment -> {
+                    TUserProfile userProfile = repoUserProfile.findByUsuario(comment.getUsuario().getIdUsuario())
+                            .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+    
+                    DtoUserComment dto = new DtoUserComment();
+                    dto.setIdUsuario(comment.getUsuario().getIdUsuario());
+                    dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
+                    dto.setNombreCarrera(
+                            userProfile.getIdCarrera() != null ? userProfile.getIdCarrera().getNombre() : "Sin carrera");
+                    dto.setAvatar(userProfile.getFotoPerfil());
+                    return dto;
+                })
+                .collect(Collectors.toMap(
+                        DtoUserComment::getIdUsuario, // Usar idUsuario como clave
+                        dto -> dto, // Mantener el objeto DtoUserComment
+                        (existing, replacement) -> existing // En caso de duplicados, mantener el existente
+                ))
+                .values()
+                .stream()
+                .collect(Collectors.toList());
     }
 
     // Obtener los comentarios de una publicación
     public List<DtoCommentPublication> getCommentsByPublication(String idPublicacion) {
-        List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacion(idPublicacion);
+        List<TCommentPublication> comments = repoComment.findByPublicacionIdPublicacionOrderByFechaRegistroDesc(idPublicacion);
 
         return comments.stream().map(comment -> {
             DtoCommentPublication dto = convertToDto(comment);
@@ -139,7 +146,6 @@ public class BusinessCommentPublication {
             return dto;
         }).collect(Collectors.toList());
     }
-
     
     // Actualizar un comentario
     public DtoCommentPublication updateComment(RequestUpdateCP request) {

@@ -20,6 +20,7 @@ import foro.Unamba_forum.Repository.RepoReactionPublication;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
 import jakarta.transaction.Transactional;
+import foro.Unamba_forum.Entity.TCommentPublication;
 import foro.Unamba_forum.Entity.TNotification;
 
 @Service
@@ -101,20 +102,30 @@ public class BusinessReactionPublication {
     }
 
     /*Obtener el total de reacciones mas comentarios */
-    public DtoReactionAndCommentSummary getReactionAndCommentSummary(String idPublicacion) {
-    long totalComentarios = repoCommentPublication.countByPublicacionIdPublicacion(idPublicacion);
+   public DtoReactionAndCommentSummary getReactionAndCommentSummary(String idPublicacion) {
+    // Obtener todos los comentarios de la publicación
+    List<TCommentPublication> comments = repoCommentPublication.findByPublicacionIdPublicacion(idPublicacion);
 
+    // Filtrar usuarios únicos basados en idUsuario
+    long totalComentarios = comments.stream()
+            .map(comment -> comment.getUsuario().getIdUsuario()) 
+            .distinct() 
+            .count(); 
+
+    // Obtener el resumen de reacciones
     List<DtoReactionSummary> reacciones = List.of(
             createReactionCount(idPublicacion, "Me identifica"),
             createReactionCount(idPublicacion, "Es increíble"),
             createReactionCount(idPublicacion, "Qué divertido"));
 
+    // Crear el resumen
     DtoReactionAndCommentSummary summary = new DtoReactionAndCommentSummary();
     summary.setReacciones(reacciones);
     summary.setTotalComentarios(totalComentarios);
 
     return summary;
 }
+
     private DtoReactionSummary createReactionCount(String idPublicacion, String tipo) {
         long cantidad = repoReaction.countByPublicacionIdPublicacionAndTipo(idPublicacion, tipo);
     

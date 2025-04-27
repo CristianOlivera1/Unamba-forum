@@ -32,16 +32,6 @@ public class CommentPublicationController {
     @Autowired
     private BusinessCommentPublication businessComment;
 
-    @GetMapping("/hierarchy/{idPublicacion}")
-    public ResponseEntity<List<DtoCommentPublication>> getCommentHierarchy(@PathVariable String idPublicacion) {
-        List<DtoCommentPublication> comments = businessComment.getCommentsByPublication(idPublicacion);
-        comments.forEach(comment -> {
-            // comment.setReacciones(businessReaction.countReactionsByComment(comment.getIdComentario()));
-            // comment.setRespuestas(businessResponse.getResponsesByComment(comment.getIdComentario()));
-        });
-        return new ResponseEntity<>(comments, HttpStatus.OK);
-    }
-
     // Endpoint para agregar un comentario
     @PostMapping("/insert")
     public ResponseEntity<ResponseInsertCP> addComment(@ModelAttribute RequestsInsertCP request) {

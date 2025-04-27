@@ -9,6 +9,9 @@ import foro.Unamba_forum.Entity.TCommentPublication;
 
 @Repository
 public interface RepoCommentPublication extends JpaRepository<TCommentPublication, String>{
-    List<TCommentPublication> findByPublicacionIdPublicacion(String idPublicacion);
+    List<TCommentPublication> findByPublicacionIdPublicacionOrderByFechaRegistroDesc(String idPublicacion);
+
     long countByPublicacionIdPublicacion(String idPublicacion);
+
+    List<TCommentPublication> findByPublicacionIdPublicacion(String idPublicacion);
 }

@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 public class DtoResponseComment {
     private String idRespuesta;
-    private String idComentario;
+    private String idComentario; //null si es una respuesta a respuesta
     private String idRespuestaPadre; // NULL si es respuesta directa al comentario y se llena en caso de que sea una respuesta a una respuesta
     private String idUsuario;
     private String contenido;

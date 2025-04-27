@@ -75,7 +75,7 @@ public class BusinessResponseComment {
 
     // Obtener respuestas de un comentario con perfil de usuario y reacciones
     public List<DtoResponseComment> getResponsesByCommentWithDetails(String idComentario) {
-        List<TResponseComment> responses = repoResponse.findByComentarioIdComentario(idComentario);
+        List<TResponseComment> responses = repoResponse.findByComentarioIdComentarioOrderByFechaRegistroDesc(idComentario);
     
         return responses.stream().map(response -> {
             DtoResponseComment dto = convertToDto(response);
