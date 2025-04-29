@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 
@@ -27,10 +28,12 @@ import foro.Unamba_forum.Business.BusinessPublication;
 import foro.Unamba_forum.Dto.DtoFile;
 import foro.Unamba_forum.Dto.DtoFixPublication;
 import foro.Unamba_forum.Dto.DtoPublication;
+import foro.Unamba_forum.Dto.DtoPublicationRelated;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.Publication.RequestsObject.RequestInsertPublication;
 import foro.Unamba_forum.Service.Publication.RequestsObject.RequestUpdatePublication;
 import foro.Unamba_forum.Service.Publication.ResponseObject.ResponseGetAllPublication;
+import foro.Unamba_forum.Service.Publication.ResponseObject.ResponseGetAllPublicationRelated;
 import foro.Unamba_forum.Service.Publication.ResponseObject.ResponseInsertPublication;
 import foro.Unamba_forum.Service.Publication.ResponseObject.ResponseUpdatePublication;
 
@@ -50,25 +53,50 @@ public class PublicationController {
             DtoPublication dtoPublication = new DtoPublication();
             dtoPublication.setIdUsuario(request.getIdUsuario());
             dtoPublication.setIdCategoria(request.getIdCategoria());
-            dtoPublication.setIdCarrera(request.getIdCarrera());
             dtoPublication.setTitulo(request.getTitulo());
             dtoPublication.setContenido(request.getContenido());
-
-            // Procesar archivos solo si se proporcionan
+    
+            // Procesar archivos y URLs
             List<DtoFile> archivos = new ArrayList<>();
             if (request.getArchivos() != null && !request.getArchivos().isEmpty()) {
-                archivos = request.getArchivos().stream().map(file -> {
+                for (Object archivo : request.getArchivos()) {
                     DtoFile dtoArchivo = new DtoFile();
-                    dtoArchivo.setFile(file);
-                    dtoArchivo.setTipo(file.getContentType().startsWith("image") ? "imagen" : "video");
-                    dtoArchivo.setRutaArchivo(file.getOriginalFilename());
-                    return dtoArchivo;
-                }).collect(Collectors.toList());
+                    if (archivo instanceof MultipartFile) {
+                        MultipartFile file = (MultipartFile) archivo;
+                        dtoArchivo.setFile(file);
+    
+                        // Clasificar archivos según su tipo MIME o extensión
+                        if (file.getContentType().equals("image/gif") || file.getOriginalFilename().endsWith(".gif")) {
+                            dtoArchivo.setTipo("gif");
+                        } else if (file.getContentType().startsWith("image")) {
+                            dtoArchivo.setTipo("imagen");
+                        } else if (file.getContentType().startsWith("video")) {
+                            dtoArchivo.setTipo("video");
+                        } else {
+                            throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
+                        }
+    
+                        dtoArchivo.setRutaArchivo(file.getOriginalFilename());
+                    } else if (archivo instanceof String) {
+                        String url = (String) archivo;
+                        dtoArchivo.setRutaArchivo(url);
+    
+                        // Clasificar URLs basadas en la extensión
+                        if (url.endsWith(".gif")) {
+                            dtoArchivo.setTipo("gif");
+                        } else if (url.endsWith(".jpg") || url.endsWith(".png") || url.endsWith(".jpeg")) {
+                            dtoArchivo.setTipo("imagen");
+                        } else {
+                            dtoArchivo.setTipo("video");
+                        }
+                    }
+                    archivos.add(dtoArchivo);
+                }
             }
             dtoPublication.setArchivos(archivos);
-
+    
             businessPublication.insertPublication(dtoPublication);
-
+    
             response.setType("success");
             response.setListMessage(List.of("Publicación insertada correctamente"));
             response.setData(dtoPublication);
@@ -118,39 +146,27 @@ public class PublicationController {
     }
 
     // obtener publicacion relacionadas
-    @GetMapping("/publicationrelated/{idPublicacion}")
-    public ResponseEntity<ResponseGeneric<Map<String, Object>>> getPublicationDetailsWithRelated(
-            @PathVariable String idPublicacion,
-            @RequestParam(defaultValue = "0") int page) {
-        ResponseGeneric<Map<String, Object>> response = new ResponseGeneric<>();
-        try {
-            // Obtener los detalles de la publicación
-            DtoPublication publicationDetails = businessPublication.getPublicationDetails(idPublicacion);
+  @GetMapping("/related/{idPublicacion}")
+public ResponseEntity<ResponseGetAllPublicationRelated> getRelatedPublications(
+        @PathVariable String idPublicacion,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "6") int size) {
+    ResponseGetAllPublicationRelated response = new ResponseGetAllPublicationRelated();
+    try {
+        // Llamar al método de negocio para obtener publicaciones relacionadas
+        Page<DtoPublicationRelated> relatedPublications = businessPublication.getRelatedPublications(
+                idPublicacion, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
 
-            // Obtener publicaciones relacionadas (mezclando con y sin archivos)
-            Page<DtoPublication> relatedPublications = businessPublication.getRelatedPublications(
-                    publicationDetails.getIdCarrera(),
-                    publicationDetails.getIdCategoria(),
-                    idPublicacion,
-                    PageRequest.of(page, 5, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
-
-            // Construir la respuesta
-            Map<String, Object> data = new HashMap<>();
-            data.put("publicationDetails", publicationDetails);
-            data.put("relatedPublications", relatedPublications.getContent());
-
-            response.setType("success");
-            response.setData(data);
-            response.setListMessage(
-                    List.of("Detalles de la publicación y publicaciones relacionadas obtenidos correctamente"));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.setType("error");
-            response.setListMessage(
-                    List.of("Error al obtener los detalles y publicaciones relacionadas: " + e.getMessage()));
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        response.setType("success");
+        response.setData(relatedPublications.getContent());
+        response.setListMessage(List.of("Publicaciones relacionadas obtenidas correctamente"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener publicaciones relacionadas: " + e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}
 
     @PutMapping("/update")
     public ResponseEntity<ResponseUpdatePublication> updatePublication(
