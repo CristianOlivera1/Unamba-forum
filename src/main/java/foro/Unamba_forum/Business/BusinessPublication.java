@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import foro.Unamba_forum.Dto.DtoFile;
 import foro.Unamba_forum.Dto.DtoFixPublication;
 import foro.Unamba_forum.Dto.DtoPublication;
+import foro.Unamba_forum.Dto.DtoPublicationRelated;
 import foro.Unamba_forum.Entity.TFile;
 import foro.Unamba_forum.Entity.TFollowUp;
 import foro.Unamba_forum.Entity.TNotification;
@@ -29,12 +30,16 @@ import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCareer;
 import foro.Unamba_forum.Repository.RepoCategory;
+import foro.Unamba_forum.Repository.RepoCommentPublication;
 import foro.Unamba_forum.Repository.RepoFile;
 import foro.Unamba_forum.Repository.RepoFollowUp;
 import foro.Unamba_forum.Repository.RepoPublication;
+import foro.Unamba_forum.Repository.RepoReactionPublication;
 import foro.Unamba_forum.Repository.RepoUser;
 import foro.Unamba_forum.Repository.RepoUserProfile;
 import jakarta.transaction.Transactional;
+import org.owasp.html.PolicyFactory;
+import org.owasp.html.Sanitizers;
 
 @Service
 public class BusinessPublication {
@@ -66,83 +71,107 @@ public class BusinessPublication {
     private RepoUserProfile repoUserProfile;
 
     @Autowired
+    private RepoCommentPublication repoCommentPublication;
+
+    @Autowired
+    private RepoReactionPublication repoReactionPublication;
+
+    @Autowired
     private SupabaseStorageService supabaseStorageService;
 
     @Transactional
     public void insertPublication(DtoPublication dtoPublication) {
         TUser usuario = repoUser.findById(dtoPublication.getIdUsuario())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
+    
         TUserProfile perfil = repoUserProfile.findByIdUsuario(usuario)
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-
+    
         if (perfil.getIdCarrera() == null) {
             throw new RuntimeException("El usuario no tiene una carrera asignada.");
         }
 
+     // Crear una política de sanitización
+     PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
+
         TPublication publication = new TPublication();
         publication.setIdPublicacion(UUID.randomUUID().toString());
         publication.setUsuario(usuario);
-        publication.setCarrera(perfil.getIdCarrera()); // Asignar la carrera del perfil del usuario
+        publication.setCarrera(perfil.getIdCarrera());
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
         publication.setTitulo(Validation.capitalizeFirstLetter(dtoPublication.getTitulo()));
-        publication.setContenido(Validation.capitalizeFirstLetter(dtoPublication.getContenido()));
+        String sanitizedContent = policy.sanitize(dtoPublication.getContenido());
+        publication.setContenido(sanitizedContent);
+
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
         publication.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
-
+    
         repoPublication.save(publication);
         dtoPublication.setIdPublicacion(publication.getIdPublicacion());
         dtoPublication.setFechaActualizacion(publication.getFechaActualizacion());
         dtoPublication.setFechaRegistro(publication.getFechaRegistro());
-
+    
         if (dtoPublication.getArchivos() != null) {
             String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
             String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
-
+    
             for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
-                MultipartFile file = dtoArchivo.getFile();
-                if (file == null) {
-                    throw new RuntimeException("El archivo no puede ser nulo");
-                }
-
                 String rutaArchivo;
-                if (file.getContentType().startsWith("image")) {
-                    String path;
-                    if (file.getOriginalFilename().endsWith(".webp")) {
-                        // Manejar imágenes WebP directamente
-                        path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+    
+                if (dtoArchivo.getFile() != null) {
+                    // Manejar archivos físicos
+                    MultipartFile file = dtoArchivo.getFile();
+                    if (file.getContentType().equals("image/gif")) {
+                        // Clasificar GIFs como tipo "gif"
+                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
                                 file.getOriginalFilename());
-                    } else {
-                        // Transformar otros formatos a WebP
-                        path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                        rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
+                        dtoArchivo.setTipo("gif");
+                    } else if (file.getContentType().startsWith("image")) {
+                        // Transformar otras imágenes a WebP
+                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
                                 file.getOriginalFilename().replaceAll("\\.(jpg|jpeg|png)$", ".webp"));
+                        rutaArchivo = subirImagenTransformada(file, path);
+                        dtoArchivo.setTipo("imagen");
+                    } else if (file.getContentType().startsWith("video")) {
+                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                                file.getOriginalFilename());
+                        rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
+                        dtoArchivo.setTipo("video");
+                    } else {
+                        throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
                     }
-                    rutaArchivo = subirImagenTransformada(file, path);
-                } else if (file.getContentType().startsWith("video")) {
-                    // Construir ruta y subir video sin transformación
-                    String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
-                            file.getOriginalFilename());
-                    rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
+                } else if (dtoArchivo.getRutaArchivo() != null && dtoArchivo.getRutaArchivo().startsWith("http")) {
+                    // Manejar URLs
+                    rutaArchivo = dtoArchivo.getRutaArchivo();
+                    if (rutaArchivo.endsWith(".gif")) {
+                        dtoArchivo.setTipo("gif");
+                    } else if (rutaArchivo.endsWith(".jpg") || rutaArchivo.endsWith(".png") || rutaArchivo.endsWith(".jpeg")) {
+                        dtoArchivo.setTipo("imagen");
+                    } else {
+                        dtoArchivo.setTipo("video");
+                    }
                 } else {
-                    throw new RuntimeException("Tipo de archivo no soportado: " + file.getContentType());
+                    throw new RuntimeException("El archivo no puede ser nulo o no es una URL válida");
                 }
-
+    
                 // Guardar archivo en la base de datos
                 TFile archivo = new TFile();
                 archivo.setIdArchivo(UUID.randomUUID().toString());
                 archivo.setPublicacion(publication);
-                archivo.setTipo(file.getContentType().startsWith("image") ? "imagen" : "video");
+                archivo.setTipo(dtoArchivo.getTipo());
                 archivo.setRutaArchivo(rutaArchivo);
                 archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
                 repoArchivo.save(archivo);
-
+    
                 dtoArchivo.setIdArchivo(archivo.getIdArchivo());
                 dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
                 dtoArchivo.setRutaArchivo(rutaArchivo);
                 dtoArchivo.setFechaRegistro(archivo.getFechaRegistro());
             }
         }
+    
         // Notificar a los seguidores del usuario
         List<TFollowUp> seguidores = repoFollowUp.findBySeguido(publication.getUsuario());
         for (TFollowUp seguidor : seguidores) {
@@ -200,11 +229,53 @@ public class BusinessPublication {
     }
 
     // Obtener publicaciones relacionadas
-    public Page<DtoPublication> getRelatedPublications(String idCarrera, String idCategoria,
-            String excludeIdPublicacion, Pageable pageable) {
-        Page<TPublication> relatedPublications = repoPublication.findRelatedPublications(idCarrera, idCategoria,
-                excludeIdPublicacion, pageable);
-        return relatedPublications.map(this::convertToDtoPublication);
+    public Page<DtoPublicationRelated> getRelatedPublications(String idPublicacion, Pageable pageable) {
+        // Obtener la publicación base
+        TPublication basePublication = repoPublication.findById(idPublicacion)
+                .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
+    
+        // Buscar publicaciones relacionadas (misma carrera y categoría, excluyendo la publicación base)
+        Page<TPublication> relatedPublications = repoPublication.findByCarreraIdCarreraAndCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
+                basePublication.getCarrera().getIdCarrera(),
+                basePublication.getCategoria().getIdCategoria(),
+                idPublicacion,
+                pageable);
+    
+        // Convertir las publicaciones relacionadas a DTO
+        return relatedPublications.map(publication -> {
+            DtoPublicationRelated dto = new DtoPublicationRelated();
+            dto.setIdPublicacion(publication.getIdPublicacion());
+            dto.setIdUsuario(publication.getUsuario().getIdUsuario());
+            dto.setIdCategoria(publication.getCategoria().getIdCategoria());
+            dto.setIdCarrera(publication.getCarrera().getIdCarrera());
+            dto.setTitulo(publication.getTitulo());
+            dto.setContenido(publication.getContenido());
+            dto.setFechaRegistro(publication.getFechaRegistro());
+    
+            // Obtener el perfil del usuario
+            TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
+                    .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+            dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
+    
+            // Contar usuarios únicos que comentaron
+            long totalUsuariosComentaron = repoCommentPublication.findByPublicacionIdPublicacion(publication.getIdPublicacion())
+                    .stream()
+                    .map(comment -> comment.getUsuario().getIdUsuario())
+                    .distinct()
+                    .count();
+            dto.setTotalCommentarios(totalUsuariosComentaron);
+    
+            // Contar total de reacciones
+            long totalReacciones = repoReactionPublication.countByPublicacionIdPublicacion(publication.getIdPublicacion());
+            dto.setTotalReacciones(totalReacciones);
+    
+            // Obtener archivos relacionados
+            List<TFile> archivos = repoArchivo.findByPublicacion(publication);
+            List<DtoFile> dtoArchivos = archivos.stream().map(this::convertToDtoArchivo).collect(Collectors.toList());
+            dto.setArchivos(dtoArchivos);
+    
+            return dto;
+        });
     }
 
     @Transactional
@@ -311,10 +382,15 @@ public class BusinessPublication {
     public void deletePublication(String idPublicacion) {
         TPublication publication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-
+    
         List<TFile> archivos = repoArchivo.findByPublicacion(publication);
-        repoArchivo.deleteAll(archivos);
-
+        if (!archivos.isEmpty()) {
+            for (TFile archivo : archivos) {
+                eliminarArchivoAnterior(archivo.getRutaArchivo());
+            }
+            repoArchivo.deleteAll(archivos);
+        }
+    
         repoPublication.delete(publication);
     }
 
