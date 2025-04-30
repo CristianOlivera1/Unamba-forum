@@ -15,6 +15,8 @@ public class DtoPublication {
     private String idCarrera;
     private String titulo;
     private String contenido;
+    private boolean fijada; 
+	private String tipoRol;
     private Timestamp fechaRegistro;
     private Timestamp fechaActualizacion;
     private String nombreCompleto;

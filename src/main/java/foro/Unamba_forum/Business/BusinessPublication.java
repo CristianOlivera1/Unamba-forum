@@ -83,21 +83,21 @@ public class BusinessPublication {
     public void insertPublication(DtoPublication dtoPublication) {
         TUser usuario = repoUser.findById(dtoPublication.getIdUsuario())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    
+
         TUserProfile perfil = repoUserProfile.findByIdUsuario(usuario)
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-    
+
         if (perfil.getIdCarrera() == null) {
             throw new RuntimeException("El usuario no tiene una carrera asignada.");
         }
 
-     // Crear una política de sanitización
-     PolicyFactory policy = Sanitizers.FORMATTING
-     .and(Sanitizers.LINKS)
-     .and(Sanitizers.BLOCKS)
-     .and(Sanitizers.TABLES)
-     .and(Sanitizers.STYLES);
-     
+        // Crear una política de sanitización
+        PolicyFactory policy = Sanitizers.FORMATTING
+                .and(Sanitizers.LINKS)
+                .and(Sanitizers.BLOCKS)
+                .and(Sanitizers.TABLES)
+                .and(Sanitizers.STYLES);
+
         TPublication publication = new TPublication();
         publication.setIdPublicacion(UUID.randomUUID().toString());
         publication.setUsuario(usuario);
@@ -110,36 +110,39 @@ public class BusinessPublication {
 
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
         publication.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
-    
+
         repoPublication.save(publication);
         dtoPublication.setIdPublicacion(publication.getIdPublicacion());
         dtoPublication.setFechaActualizacion(publication.getFechaActualizacion());
         dtoPublication.setFechaRegistro(publication.getFechaRegistro());
-    
+
         if (dtoPublication.getArchivos() != null) {
             String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
             String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
-    
+
             for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
                 String rutaArchivo;
-    
+
                 if (dtoArchivo.getFile() != null) {
                     // Manejar archivos físicos
                     MultipartFile file = dtoArchivo.getFile();
                     if (file.getContentType().equals("image/gif")) {
                         // Clasificar GIFs como tipo "gif"
-                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria,
+                                publication.getIdPublicacion(),
                                 file.getOriginalFilename());
                         rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
                         dtoArchivo.setTipo("gif");
                     } else if (file.getContentType().startsWith("image")) {
                         // Transformar otras imágenes a WebP
-                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria,
+                                publication.getIdPublicacion(),
                                 file.getOriginalFilename().replaceAll("\\.(jpg|jpeg|png)$", ".webp"));
                         rutaArchivo = subirImagenTransformada(file, path);
                         dtoArchivo.setTipo("imagen");
                     } else if (file.getContentType().startsWith("video")) {
-                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                        String path = construirRutaArchivo(nombreCarrera, nombreCategoria,
+                                publication.getIdPublicacion(),
                                 file.getOriginalFilename());
                         rutaArchivo = supabaseStorageService.uploadFile(file, path, bucketName2);
                         dtoArchivo.setTipo("video");
@@ -151,7 +154,8 @@ public class BusinessPublication {
                     rutaArchivo = dtoArchivo.getRutaArchivo();
                     if (rutaArchivo.endsWith(".gif")) {
                         dtoArchivo.setTipo("gif");
-                    } else if (rutaArchivo.endsWith(".jpg") || rutaArchivo.endsWith(".png") || rutaArchivo.endsWith(".jpeg")) {
+                    } else if (rutaArchivo.endsWith(".jpg") || rutaArchivo.endsWith(".png")
+                            || rutaArchivo.endsWith(".jpeg")) {
                         dtoArchivo.setTipo("imagen");
                     } else {
                         dtoArchivo.setTipo("video");
@@ -159,7 +163,7 @@ public class BusinessPublication {
                 } else {
                     throw new RuntimeException("El archivo no puede ser nulo o no es una URL válida");
                 }
-    
+
                 // Guardar archivo en la base de datos
                 TFile archivo = new TFile();
                 archivo.setIdArchivo(UUID.randomUUID().toString());
@@ -168,14 +172,14 @@ public class BusinessPublication {
                 archivo.setRutaArchivo(rutaArchivo);
                 archivo.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
                 repoArchivo.save(archivo);
-    
+
                 dtoArchivo.setIdArchivo(archivo.getIdArchivo());
                 dtoArchivo.setIdPublicacion(publication.getIdPublicacion());
                 dtoArchivo.setRutaArchivo(rutaArchivo);
                 dtoArchivo.setFechaRegistro(archivo.getFechaRegistro());
             }
         }
-    
+
         // Notificar a los seguidores del usuario
         List<TFollowUp> seguidores = repoFollowUp.findBySeguido(publication.getUsuario());
         for (TFollowUp seguidor : seguidores) {
@@ -237,14 +241,16 @@ public class BusinessPublication {
         // Obtener la publicación base
         TPublication basePublication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-    
-        // Buscar publicaciones relacionadas (misma carrera y categoría, excluyendo la publicación base)
-        Page<TPublication> relatedPublications = repoPublication.findByCarreraIdCarreraAndCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
-                basePublication.getCarrera().getIdCarrera(),
-                basePublication.getCategoria().getIdCategoria(),
-                idPublicacion,
-                pageable);
-    
+
+        // Buscar publicaciones relacionadas (misma carrera y categoría, excluyendo la
+        // publicación base)
+        Page<TPublication> relatedPublications = repoPublication
+                .findByCarreraIdCarreraAndCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
+                        basePublication.getCarrera().getIdCarrera(),
+                        basePublication.getCategoria().getIdCategoria(),
+                        idPublicacion,
+                        pageable);
+
         // Convertir las publicaciones relacionadas a DTO
         return relatedPublications.map(publication -> {
             DtoPublicationRelated dto = new DtoPublicationRelated();
@@ -255,29 +261,31 @@ public class BusinessPublication {
             dto.setTitulo(publication.getTitulo());
             dto.setContenido(publication.getContenido());
             dto.setFechaRegistro(publication.getFechaRegistro());
-    
+
             // Obtener el perfil del usuario
             TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
                     .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
             dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
-    
+
             // Contar usuarios únicos que comentaron
-            long totalUsuariosComentaron = repoCommentPublication.findByPublicacionIdPublicacion(publication.getIdPublicacion())
+            long totalUsuariosComentaron = repoCommentPublication
+                    .findByPublicacionIdPublicacion(publication.getIdPublicacion())
                     .stream()
                     .map(comment -> comment.getUsuario().getIdUsuario())
                     .distinct()
                     .count();
             dto.setTotalCommentarios(totalUsuariosComentaron);
-    
+
             // Contar total de reacciones
-            long totalReacciones = repoReactionPublication.countByPublicacionIdPublicacion(publication.getIdPublicacion());
+            long totalReacciones = repoReactionPublication
+                    .countByPublicacionIdPublicacion(publication.getIdPublicacion());
             dto.setTotalReacciones(totalReacciones);
-    
+
             // Obtener archivos relacionados
             List<TFile> archivos = repoArchivo.findByPublicacion(publication);
             List<DtoFile> dtoArchivos = archivos.stream().map(this::convertToDtoArchivo).collect(Collectors.toList());
             dto.setArchivos(dtoArchivos);
-    
+
             return dto;
         });
     }
@@ -386,7 +394,7 @@ public class BusinessPublication {
     public void deletePublication(String idPublicacion) {
         TPublication publication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-    
+
         List<TFile> archivos = repoArchivo.findByPublicacion(publication);
         if (!archivos.isEmpty()) {
             for (TFile archivo : archivos) {
@@ -394,7 +402,7 @@ public class BusinessPublication {
             }
             repoArchivo.deleteAll(archivos);
         }
-    
+
         repoPublication.delete(publication);
     }
 
@@ -414,13 +422,13 @@ public class BusinessPublication {
         // Obtener el perfil del usuario
         TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-  // Obtener el rol del usuario
-    TRol rol = publication.getUsuario().getRol();
-    if (rol != null) {
-        dto.setTipoRol(rol.getTipo().name());
-    } else {
-        dto.setTipoRol("Sin rol asignado");
-    }
+        // Obtener el rol del usuario
+        TRol rol = publication.getUsuario().getRol();
+        if (rol != null) {
+            dto.setTipoRol(rol.getTipo().name());
+        } else {
+            dto.setTipoRol("Sin rol asignado");
+        }
         // Establecer datos adicionales
         dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
         dto.setAvatar(userProfile.getFotoPerfil());
