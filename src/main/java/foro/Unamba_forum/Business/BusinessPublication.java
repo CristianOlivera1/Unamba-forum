@@ -25,10 +25,10 @@ import foro.Unamba_forum.Entity.TFile;
 import foro.Unamba_forum.Entity.TFollowUp;
 import foro.Unamba_forum.Entity.TNotification;
 import foro.Unamba_forum.Entity.TPublication;
+import foro.Unamba_forum.Entity.TRol;
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
 import foro.Unamba_forum.Helper.Validation;
-import foro.Unamba_forum.Repository.RepoCareer;
 import foro.Unamba_forum.Repository.RepoCategory;
 import foro.Unamba_forum.Repository.RepoCommentPublication;
 import foro.Unamba_forum.Repository.RepoFile;
@@ -92,8 +92,12 @@ public class BusinessPublication {
         }
 
      // Crear una política de sanitización
-     PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
-
+     PolicyFactory policy = Sanitizers.FORMATTING
+     .and(Sanitizers.LINKS)
+     .and(Sanitizers.BLOCKS)
+     .and(Sanitizers.TABLES)
+     .and(Sanitizers.STYLES);
+     
         TPublication publication = new TPublication();
         publication.setIdPublicacion(UUID.randomUUID().toString());
         publication.setUsuario(usuario);
@@ -402,13 +406,21 @@ public class BusinessPublication {
         dto.setIdCarrera(publication.getCarrera().getIdCarrera());
         dto.setTitulo(publication.getTitulo());
         dto.setContenido(publication.getContenido());
+        dto.setFijada(publication.isFijada());
+
         dto.setFechaRegistro(publication.getFechaRegistro());
         dto.setFechaActualizacion(publication.getFechaActualizacion());
 
         // Obtener el perfil del usuario
         TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
-
+  // Obtener el rol del usuario
+    TRol rol = publication.getUsuario().getRol();
+    if (rol != null) {
+        dto.setTipoRol(rol.getTipo().name());
+    } else {
+        dto.setTipoRol("Sin rol asignado");
+    }
         // Establecer datos adicionales
         dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
         dto.setAvatar(userProfile.getFotoPerfil());
