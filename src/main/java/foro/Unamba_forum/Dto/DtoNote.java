@@ -10,6 +10,7 @@ import lombok.Setter;
 public class DtoNote {
     private String idNota;
     private String nombreCompleto;
+    private String nombreCarrera;
     private String avatar;
     private String contenido;
     private String backgroundColor;
