@@ -26,5 +26,5 @@ public class RequestInsertPublication {
     @NotBlank(message = "El campo \"contenido \" es requerido")
     private String contenido;
 
-    private List<Object> archivos; // Puede contener MultipartFile o String (URL)
+    private List<Object> archivos;
 }
