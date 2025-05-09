@@ -43,7 +43,7 @@ public class Validation {
         }
     }
 
-    /*Empezar la primera letra de un palabra en mayuscula */
+    /*Empezar la solo la primera palabra en mayuscula */
     public static String capitalizeFirstLetter(String text) {
         if (text == null || text.isEmpty()) {
             return text;
@@ -51,6 +51,7 @@ public class Validation {
         return text.substring(0, 1).toUpperCase() + text.substring(1);
     }
 
+    /*Empezar cada palabra en mayuscula */
     public static String capitalizeEachWord(String text) {
         if (text == null || text.isEmpty()) {
             return text;
