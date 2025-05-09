@@ -78,6 +78,12 @@ public class BusinessNote {
         return convertToDto(note);
     }
 
+    public List<DtoNote> getAllNotes() {
+        List<TNote> notes = repoNote.findAll();
+    
+        return notes.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
     public List<DtoNote> getNotesByUser(String idUsuario) {
         TUser usuario = repoUser.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
