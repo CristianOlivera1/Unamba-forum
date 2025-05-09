@@ -249,8 +249,7 @@ public class PublicationController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-    @GetMapping("/withfiles/career/paginated/{idCarrera}")
+ @GetMapping("/withfiles/career/paginated/{idCarrera}")
     public ResponseEntity<ResponseGetAllPublication> getPublicationsWithFilesByCareerPaginated(
             @PathVariable String idCarrera,
             @RequestParam(defaultValue = "0") int page) {
@@ -270,6 +269,7 @@ public class PublicationController {
         }
     }
 
+   
     @GetMapping("/withoutfiles/paginated")
     public ResponseEntity<ResponseGetAllPublication> getPublicationsWithoutFiles(
             @RequestParam(defaultValue = "0") int page) {
@@ -311,7 +311,7 @@ public class PublicationController {
         ResponseGetAllPublication response = new ResponseGetAllPublication();
         try {
             Page<DtoPublication> publications = businessPublication.getPublicationsWithoutFilesByCareerPageable(
-                    idCarrera, PageRequest.of(page, 3, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+                    idCarrera, PageRequest.of(page, 5, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
             response.setType("success");
             response.setData(publications.getContent());
             response.setListMessage(List.of("Publicaciones sin archivos por carrera obtenidas correctamente"));
