@@ -47,6 +47,23 @@ public ResponseEntity<ResponseInsertNote> createNote(@ModelAttribute RequestsIns
     }
 }
 
+
+@GetMapping("/getall")
+public ResponseEntity<ResponseGetAllNote> getAllNotes() {
+    ResponseGetAllNote response = new ResponseGetAllNote();
+    try {
+        List<DtoNote> notes = businessNote.getAllNotes();
+        response.setType("success");
+        response.setData(notes);
+        response.setListMessage(List.of("Todas las notas obtenidas correctamente"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al obtener todas las notas: " + e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+}
+
 @GetMapping("/career/{idCarrera}")
 public ResponseEntity<ResponseGetAllNote> getNotesByCareer(@PathVariable String idCarrera) {
     ResponseGetAllNote response = new ResponseGetAllNote();
