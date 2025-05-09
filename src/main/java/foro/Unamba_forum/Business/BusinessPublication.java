@@ -106,7 +106,8 @@ public class BusinessPublication {
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
         publication.setTitulo(Validation.capitalizeFirstLetter(dtoPublication.getTitulo()));
         String sanitizedContent = policy.sanitize(dtoPublication.getContenido());
-        publication.setContenido(sanitizedContent);
+        String contentUpper = Validation.capitalizeFirstLetter(sanitizedContent);
+        publication.setContenido(contentUpper);
 
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
         publication.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
