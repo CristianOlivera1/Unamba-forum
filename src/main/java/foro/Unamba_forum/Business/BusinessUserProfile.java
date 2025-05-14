@@ -220,6 +220,7 @@ public class BusinessUserProfile {
         DtoUserProfileHover dto = new DtoUserProfileHover();
         dto.setIdUsuario(user.getIdUsuario());
         dto.setFotoPerfil(profile.getFotoPerfil());
+        dto.setIdCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getIdCarrera() : null);
         dto.setFotoPortada(profile.getFotoPortada());
         dto.setNombreCompleto(profile.getNombre() + " " + profile.getApellidos());
         dto.setDescripcion(profile.getDescripcion());

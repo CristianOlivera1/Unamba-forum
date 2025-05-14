@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 public class DtoUserProfileHover {
     private String idUsuario;
+    private String idCarrera;
     private String fotoPerfil;
     private String fotoPortada;
     private String nombreCompleto;

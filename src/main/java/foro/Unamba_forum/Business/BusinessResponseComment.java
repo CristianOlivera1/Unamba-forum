@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import foro.Unamba_forum.Dto.DtoReactionSummaryComment;
 import foro.Unamba_forum.Dto.DtoResponseComment;
-import foro.Unamba_forum.Dto.DtoUserProfile;
 import foro.Unamba_forum.Entity.TCommentPublication;
 import foro.Unamba_forum.Entity.TReactionComment;
 import foro.Unamba_forum.Entity.TResponseComment;
