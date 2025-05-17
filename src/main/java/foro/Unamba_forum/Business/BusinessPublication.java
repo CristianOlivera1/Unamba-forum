@@ -29,6 +29,7 @@ import foro.Unamba_forum.Entity.TPublication;
 import foro.Unamba_forum.Entity.TRol;
 import foro.Unamba_forum.Entity.TUser;
 import foro.Unamba_forum.Entity.TUserProfile;
+import foro.Unamba_forum.Helper.BadWordsFilter;
 import foro.Unamba_forum.Helper.Validation;
 import foro.Unamba_forum.Repository.RepoCategory;
 import foro.Unamba_forum.Repository.RepoCommentPublication;
@@ -104,9 +105,12 @@ public class BusinessPublication {
         publication.setCarrera(perfil.getIdCarrera());
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
-        publication.setTitulo(Validation.capitalizeFirstLetter(dtoPublication.getTitulo()));
+        String censoredTitle = BadWordsFilter.censor(dtoPublication.getTitulo());
+        publication.setTitulo(Validation.capitalizeFirstLetter(censoredTitle));
+        
         String sanitizedContent = policy.sanitize(dtoPublication.getContenido());
-        String contentUpper = Validation.capitalizeFirstLetter(sanitizedContent);
+        String censoredContent = BadWordsFilter.censor(sanitizedContent);
+        String contentUpper = Validation.capitalizeFirstLetter(censoredContent);
         publication.setContenido(contentUpper);
 
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
@@ -296,30 +300,31 @@ public class BusinessPublication {
         // Buscar la publicación existente
         TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-    
-        // Actualizar los datos básicos de la publicación
-        publication.setTitulo(Validation.capitalizeFirstLetter(dtoPublication.getTitulo()));
+
+        String censoredTitle= BadWordsFilter.censor(dtoPublication.getTitulo());
+        publication.setTitulo(Validation.capitalizeFirstLetter(censoredTitle));
+
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
-    
+
         // Sanitizar el contenido
-        PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS).and(Sanitizers.BLOCKS).and(Sanitizers.STYLES);
+        PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS).and(Sanitizers.BLOCKS)
+                .and(Sanitizers.STYLES);
         String sanitizedContent = policy.sanitize(dtoPublication.getContenido());
-        publication.setContenido(sanitizedContent);
-    
+        String censoredContent = BadWordsFilter.censor(sanitizedContent);
+        publication.setContenido(Validation.capitalizeFirstLetter(censoredContent));
+
         publication.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
-    
-        // Guardar los cambios en la publicación
+
         repoPublication.save(publication);
-    
-        // Obtener los archivos existentes
+
         List<TFile> existingFiles = repoArchivo.findByPublicacion(publication);
-    
-        // Crear una lista de rutas de archivos enviadas desde el frontend
+
         List<String> rutasEnviadas = dtoPublication.getArchivos().stream()
-                .map(dtoFile -> dtoFile.getRutaArchivo() != null ? dtoFile.getRutaArchivo() : dtoFile.getFile().getOriginalFilename())
+                .map(dtoFile -> dtoFile.getRutaArchivo() != null ? dtoFile.getRutaArchivo()
+                        : dtoFile.getFile().getOriginalFilename())
                 .collect(Collectors.toList());
-    
+
         // Eliminar archivos que ya no están en la lista enviada
         List<TFile> archivosAEliminar = existingFiles.stream()
                 .filter(existingFile -> !rutasEnviadas.contains(existingFile.getRutaArchivo()))
@@ -328,22 +333,22 @@ public class BusinessPublication {
             eliminarArchivoAnterior(archivo.getRutaArchivo());
             repoArchivo.delete(archivo);
         }
-    
+
         // Agregar nuevos archivos y URLs
         List<TFile> nuevosArchivos = new ArrayList<>();
         String nombreCarrera = Validation.normalizarNombreCarrera(publication.getCarrera().getNombre());
         String nombreCategoria = Validation.normalizarNombreArchivo(publication.getCategoria().getNombre());
-    
+
         for (DtoFile dtoArchivo : dtoPublication.getArchivos()) {
             if (dtoArchivo.getFile() != null) {
                 // Manejar archivos físicos
                 MultipartFile file = dtoArchivo.getFile();
                 String rutaArchivo = supabaseStorageService.uploadFile(
-                    file,
-                    construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(), file.getOriginalFilename()),
-                    bucketName2
-                );
-    
+                        file,
+                        construirRutaArchivo(nombreCarrera, nombreCategoria, publication.getIdPublicacion(),
+                                file.getOriginalFilename()),
+                        bucketName2);
+
                 TFile nuevoArchivo = new TFile();
                 nuevoArchivo.setIdArchivo(UUID.randomUUID().toString());
                 nuevoArchivo.setPublicacion(publication);
@@ -362,13 +367,13 @@ public class BusinessPublication {
                 nuevosArchivos.add(nuevoArchivo);
             }
         }
-    
+
         // Guardar los nuevos archivos en la base de datos
         if (!nuevosArchivos.isEmpty()) {
             repoArchivo.saveAll(nuevosArchivos);
         }
     }
-    
+
     private String determinarTipoArchivo(String contentType, String nombreArchivo) {
         if (contentType != null) {
             if (contentType.equals("image/gif") || nombreArchivo.endsWith(".gif")) {
@@ -381,7 +386,8 @@ public class BusinessPublication {
         } else if (nombreArchivo != null) {
             if (nombreArchivo.endsWith(".gif")) {
                 return "gif";
-            } else if (nombreArchivo.endsWith(".jpg") || nombreArchivo.endsWith(".png") || nombreArchivo.endsWith(".jpeg") || nombreArchivo.endsWith(".webp")) {
+            } else if (nombreArchivo.endsWith(".jpg") || nombreArchivo.endsWith(".png")
+                    || nombreArchivo.endsWith(".jpeg") || nombreArchivo.endsWith(".webp")) {
                 return "imagen";
             } else {
                 return "video";
@@ -389,7 +395,7 @@ public class BusinessPublication {
         }
         throw new RuntimeException("Tipo de archivo no soportado");
     }
-    
+
     private void eliminarArchivoAnterior(String fileUrl) {
         if (fileUrl != null) {
             String oldPath = fileUrl.replace(supabaseUrl + "/storage/v1/object/public/", "");
