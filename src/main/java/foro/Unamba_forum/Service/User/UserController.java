@@ -20,6 +20,7 @@ import foro.Unamba_forum.Business.BusinessUser;
 import foro.Unamba_forum.Dto.DtoRegisterUser;
 import foro.Unamba_forum.Dto.DtoUser;
 import foro.Unamba_forum.Dto.DtoUserProfile;
+import foro.Unamba_forum.Helper.AesUtil;
 import foro.Unamba_forum.Service.Generic.ResponseGeneric;
 import foro.Unamba_forum.Service.User.RequestsObject.RequestUpdate;
 import foro.Unamba_forum.Service.User.ResponseObject.ResponseGetAllUsers;
@@ -29,12 +30,13 @@ import foro.Unamba_forum.Service.User.ResponseObject.ResponseUpdate;
 
 @RequestMapping("/user")
 public class UserController {
-  
+
     @Autowired
     private BusinessUser businessUser;
 
     @PostMapping("/insert")
-    public ResponseEntity<ResponseGeneric<DtoUser>> insert(@RequestParam String email, @RequestParam String contrasenha) {
+    public ResponseEntity<ResponseGeneric<DtoUser>> insert(@RequestParam String email,
+            @RequestParam String contrasenha) {
         ResponseGeneric<DtoUser> response = new ResponseGeneric<>();
         try {
             if (businessUser.emailExists(email)) {
@@ -58,20 +60,23 @@ public class UserController {
         } catch (Exception e) {
             e.printStackTrace();
             response.setType("exception");
-            response.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
+            response.setListMessage(List
+                    .of("Ocurrió un error inesperado, estamos trabajando para resolverlo. Gracias por su paciencia."));
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ResponseGeneric<DtoUser>> login(@RequestParam String email, @RequestParam String contrasenha) {
+    public ResponseEntity<ResponseGeneric<DtoUser>> login(@RequestParam String email,
+            @RequestParam String contrasenha) {
         ResponseGeneric<DtoUser> response = new ResponseGeneric<>();
         try {
             DtoUser dtoUser = businessUser.login(email, contrasenha);
 
             if (dtoUser == null) {
                 response.setType("error");
-                response.setListMessage(List.of(businessUser.emailExists(email) ? "Contraseña incorrecta" : "Usuario incorrecto"));
+                response.setListMessage(
+                        List.of(businessUser.emailExists(email) ? "Contraseña incorrecta" : "Usuario incorrecto"));
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
 
@@ -156,18 +161,29 @@ public class UserController {
         ResponseUpdate responseUpdate = new ResponseUpdate();
 
         try {
-            DtoUser dtoUser = new DtoUser();
-            dtoUser.setIdUsuario(requestUpdate.getIdUsuario());
-
             DtoUser existingUser = businessUser.getUserById(requestUpdate.getIdUsuario());
-            if (existingUser != null && !existingUser.getEmail().equals(requestUpdate.getEmail()) && businessUser.emailExists(requestUpdate.getEmail())) {
+            if (existingUser == null) {
                 responseUpdate.setType("error");
-                responseUpdate.setListMessage(List.of("El email de usuario ya existe"));
-                return new ResponseEntity<>(responseUpdate, HttpStatus.OK);
+                responseUpdate.setListMessage(List.of("No se encontró el registro para actualizar."));
+                return new ResponseEntity<>(responseUpdate, HttpStatus.NOT_FOUND);
             }
 
-            // Establecer nuevos valores en el DTO
-            dtoUser.setEmail(requestUpdate.getEmail());
+            // Validar contraseña actual
+            if (requestUpdate.getCurrentPassword() != null && !requestUpdate.getCurrentPassword().isEmpty()) {
+                String encryptedCurrent = AesUtil.encrypt(requestUpdate.getCurrentPassword());
+                if (!encryptedCurrent.equals(existingUser.getContrasenha())) {
+                    responseUpdate.setType("error");
+                    responseUpdate.setListMessage(List.of("La contraseña actual es incorrecta."));
+                    return new ResponseEntity<>(responseUpdate, HttpStatus.OK);
+                }
+            } else {
+                responseUpdate.setType("error");
+                responseUpdate.setListMessage(List.of("Debes ingresar tu contraseña actual."));
+                return new ResponseEntity<>(responseUpdate, HttpStatus.BAD_REQUEST);
+            }
+
+            DtoUser dtoUser = new DtoUser();
+            dtoUser.setIdUsuario(requestUpdate.getIdUsuario());
             dtoUser.setContrasenha(requestUpdate.getContrasenha());
             dtoUser.setFechaRegistro(existingUser.getFechaRegistro());
             dtoUser.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
@@ -180,13 +196,14 @@ public class UserController {
             }
 
             responseUpdate.setType("success");
-            responseUpdate.setListMessage(List.of("El registro se actualizó correctamente."));
+            responseUpdate.setListMessage(List.of("La contraseña se actualizó correctamente."));
             responseUpdate.setData(dtoUser);
             return new ResponseEntity<>(responseUpdate, HttpStatus.OK);
 
         } catch (Exception e) {
             responseUpdate.setType("exception");
-            responseUpdate.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para solucionarlo."));
+            responseUpdate
+                    .setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para solucionarlo."));
             return new ResponseEntity<>(responseUpdate, HttpStatus.BAD_REQUEST);
         }
     }
@@ -195,10 +212,11 @@ public class UserController {
     public ResponseEntity<ResponseGeneric<DtoRegisterUser>> registrarUsuario(@ModelAttribute DtoRegisterUser dto) {
         ResponseGeneric<DtoRegisterUser> responseRegister = new ResponseGeneric<>();
         try {
-            
+
             if (dto.getEmail().endsWith("@unamba.edu.pe")) {
                 responseRegister.setType("error");
-                responseRegister.setListMessage(List.of("El email no puede tener el dominio @unamba.edu.pe, si quiere registrase como usuario de la universidad, por favor, registrese con Google."));
+                responseRegister.setListMessage(List.of(
+                        "El email no puede tener el dominio @unamba.edu.pe, si quiere registrase como usuario de la universidad, por favor, registrese con Google."));
                 return new ResponseEntity<>(responseRegister, HttpStatus.OK);
             }
 
@@ -214,33 +232,35 @@ public class UserController {
             return new ResponseEntity<>(responseRegister, HttpStatus.OK);
         } catch (Exception e) {
             responseRegister.setType("exception");
-            responseRegister.setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para solucionarlo."));
+            responseRegister
+                    .setListMessage(List.of("Ocurrió un error inesperado, estamos trabajando para solucionarlo."));
             return new ResponseEntity<>(responseRegister, HttpStatus.BAD_REQUEST);
         }
     }
 
-    //Sugerencias de usuarios 5 por carrera y por usuarios que siguen a las personas que sigo
+    // Sugerencias de usuarios 5 por carrera y por usuarios que siguen a las
+    // personas que sigo
     @GetMapping("/suggested/{idUsuario}")
     public ResponseEntity<ResponseGeneric<List<DtoUserProfile>>> getSuggestedUsers(
-        @PathVariable String idUsuario, @RequestParam(defaultValue = "5") int count) {
+            @PathVariable String idUsuario, @RequestParam(defaultValue = "5") int count) {
         ResponseGeneric<List<DtoUserProfile>> response = new ResponseGeneric<>();
         try {
-        List<DtoUserProfile> suggestedUsers = businessUser.getSuggestedUsers(idUsuario, count);
-        response.setType("success");
-        response.setData(suggestedUsers);
-        response.setListMessage(List.of("Usuarios sugeridos obtenidos correctamente."));
-        return new ResponseEntity<>(response, HttpStatus.OK);
+            List<DtoUserProfile> suggestedUsers = businessUser.getSuggestedUsers(idUsuario, count);
+            response.setType("success");
+            response.setData(suggestedUsers);
+            response.setListMessage(List.of("Usuarios sugeridos obtenidos correctamente."));
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
-        e.printStackTrace();
-        response.setType("exception");
-        response.setListMessage(List.of("Ocurrió un error al obtener los usuarios sugeridos."));
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            e.printStackTrace();
+            response.setType("exception");
+            response.setListMessage(List.of("Ocurrió un error al obtener los usuarios sugeridos."));
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @DeleteMapping("/delete/{idUsuario}")
     public ResponseEntity<ResponseGeneric<String>> delete(@PathVariable String idUsuario) {
-   ResponseGeneric<String> response = new ResponseGeneric<>();
+        ResponseGeneric<String> response = new ResponseGeneric<>();
         try {
             boolean deleted = businessUser.delete(idUsuario);
             if (!deleted) {
