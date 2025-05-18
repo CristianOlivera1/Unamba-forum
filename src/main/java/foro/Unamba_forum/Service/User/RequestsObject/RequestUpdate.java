@@ -9,6 +9,6 @@ import lombok.Setter;
 public class RequestUpdate {
     @NotBlank(message = "El campo \"idUsuario\" es requerido")
     private String idUsuario;
-    private String email;
     private String contrasenha;
+    private String currentPassword;
 }
