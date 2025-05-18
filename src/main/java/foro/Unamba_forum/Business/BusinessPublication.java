@@ -107,7 +107,7 @@ public class BusinessPublication {
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada")));
         String censoredTitle = BadWordsFilter.censor(dtoPublication.getTitulo());
         publication.setTitulo(Validation.capitalizeFirstLetter(censoredTitle));
-        
+
         String sanitizedContent = policy.sanitize(dtoPublication.getContenido());
         String censoredContent = BadWordsFilter.censor(sanitizedContent);
         String contentUpper = Validation.capitalizeFirstLetter(censoredContent);
@@ -241,16 +241,16 @@ public class BusinessPublication {
         return convertToDtoPublication(publication);
     }
 
-    // Obtener publicaciones relacionadas
+    // Obtener publicaciones relacionadas (misma carrera o misma categoría,
+    // excluyendo la publicación base)
     public Page<DtoPublicationRelated> getRelatedPublications(String idPublicacion, Pageable pageable) {
-        // Obtener la publicación base
         TPublication basePublication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
 
-        // Buscar publicaciones relacionadas (misma carrera y categoría, excluyendo la
-        // publicación base)
+        // Buscar publicaciones relacionadas (misma carrera O misma categoría,
+        // excluyendo la publicación base)
         Page<TPublication> relatedPublications = repoPublication
-                .findByCarreraIdCarreraAndCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
+                .findByCarreraIdCarreraOrCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
                         basePublication.getCarrera().getIdCarrera(),
                         basePublication.getCategoria().getIdCategoria(),
                         idPublicacion,
@@ -267,12 +267,10 @@ public class BusinessPublication {
             dto.setContenido(publication.getContenido());
             dto.setFechaRegistro(publication.getFechaRegistro());
 
-            // Obtener el perfil del usuario
             TUserProfile userProfile = repoUserProfile.findByIdUsuario(publication.getUsuario())
                     .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
             dto.setNombreCompleto(userProfile.getNombre() + " " + userProfile.getApellidos());
 
-            // Contar usuarios únicos que comentaron
             long totalUsuariosComentaron = repoCommentPublication
                     .findByPublicacionIdPublicacion(publication.getIdPublicacion())
                     .stream()
@@ -281,12 +279,10 @@ public class BusinessPublication {
                     .count();
             dto.setTotalCommentarios(totalUsuariosComentaron);
 
-            // Contar total de reacciones
             long totalReacciones = repoReactionPublication
                     .countByPublicacionIdPublicacion(publication.getIdPublicacion());
             dto.setTotalReacciones(totalReacciones);
 
-            // Obtener archivos relacionados
             List<TFile> archivos = repoArchivo.findByPublicacion(publication);
             List<DtoFile> dtoArchivos = archivos.stream().map(this::convertToDtoArchivo).collect(Collectors.toList());
             dto.setArchivos(dtoArchivos);
@@ -301,7 +297,7 @@ public class BusinessPublication {
         TPublication publication = repoPublication.findById(dtoPublication.getIdPublicacion())
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
 
-        String censoredTitle= BadWordsFilter.censor(dtoPublication.getTitulo());
+        String censoredTitle = BadWordsFilter.censor(dtoPublication.getTitulo());
         publication.setTitulo(Validation.capitalizeFirstLetter(censoredTitle));
 
         publication.setCategoria(repoCategory.findById(dtoPublication.getIdCategoria())
