@@ -18,6 +18,8 @@ public class DtoRegisterUser {
     private String avatar;
     private Timestamp fechaRegistro;
     private String jwtToken;
+    private Byte genero;
+
 
     public DtoRegisterUser() {}
 
