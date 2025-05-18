@@ -77,7 +77,6 @@ public class BusinessUser {
         repoUser.save(tUser);
     }
 
-
     public boolean emailExists(String email) {
         return repoUser.findByEmail(email).isPresent();
     }
@@ -113,19 +112,21 @@ public class BusinessUser {
 
     @Transactional
     public void registrarUsuarioConGoogle(DtoRegisterUser dto) throws Exception {
-    
+
         TUser usuario = new TUser();
         usuario.setIdUsuario(UUID.randomUUID().toString());
         usuario.setEmail(dto.getEmail());
         usuario.setContrasenha(null);
         usuario.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
-    
+
         // Asignar rol según el dominio del correo
         TRol rol = dto.getEmail().endsWith("@unamba.edu.pe")
-                ? repoRol.findByTipo(TRol.TipoRol.ESTUDIANTE).orElseThrow(() -> new Exception("Rol ESTUDIANTE no configurado"))
-                : repoRol.findByTipo(TRol.TipoRol.INVITADO).orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
+                ? repoRol.findByTipo(TRol.TipoRol.ESTUDIANTE)
+                        .orElseThrow(() -> new Exception("Rol ESTUDIANTE no configurado"))
+                : repoRol.findByTipo(TRol.TipoRol.INVITADO)
+                        .orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
         usuario.setRol(rol);
-    
+
         repoUser.save(usuario);
 
         dto.setIdUsuario(usuario.getIdUsuario());
@@ -139,18 +140,18 @@ public class BusinessUser {
         perfil.setNombre(dto.getNombre());
         perfil.setApellidos(dto.getApellidos());
         perfil.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
-    
+
         TCareer carrera = dto.getIdCarrera() != null ? repoCareer.findById(dto.getIdCarrera()).orElse(null) : null;
         perfil.setIdCarrera(carrera);
 
         String perfilUrl = subirFotoPerfil(dto, usuario, carrera);
         perfil.setFotoPerfil(perfilUrl);
-    
+
         String coverUrl = subirFotoPortada(usuario, carrera);
         perfil.setFotoPortada(coverUrl);
-    
+
         repoUserProfile.save(perfil);
-    
+
         String idActor = "7213bed0-624b-4301-b6f7-aa5e4106f0c0";
         String mensaje = "⭐¡Bienvenido a la plataforma, " + dto.getNombre() + " " + dto.getApellidos() + "✨🎉!";
         notificacionService.createNotification(
@@ -169,9 +170,9 @@ public class BusinessUser {
         String contrasenhaEncriptada = AesUtil.encrypt(dto.getContrasenha());
         usuario.setContrasenha(contrasenhaEncriptada);
         usuario.setFechaRegistro(new Timestamp(System.currentTimeMillis()));
-        
+
         TRol rolInvitado = repoRol.findByTipo(TRol.TipoRol.INVITADO)
-        .orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
+                .orElseThrow(() -> new Exception("Rol INVITADO no configurado"));
         usuario.setRol(rolInvitado);
 
         repoUser.save(usuario);
@@ -179,7 +180,7 @@ public class BusinessUser {
         dto.setIdRol(usuario.getRol().getIdRol());
         dto.setFechaRegistro(usuario.getFechaRegistro());
         dto.setContrasenha(contrasenhaEncriptada);
-        dto.setJwtToken(new JwtUtil().generateToken(dto.getIdUsuario(), dto.getEmail()));   
+        dto.setJwtToken(new JwtUtil().generateToken(dto.getIdUsuario(), dto.getEmail()));
         // Crear el perfil de usuario
         TUserProfile perfil = new TUserProfile();
         perfil.setIdPerfil(UUID.randomUUID().toString());
@@ -187,6 +188,7 @@ public class BusinessUser {
         perfil.setNombre(Validation.capitalizeEachWord(dto.getNombre()));
         perfil.setApellidos(Validation.capitalizeEachWord(dto.getApellidos()));
         perfil.setFechaActualizacion(new Timestamp(System.currentTimeMillis()));
+        perfil.setGenero(dto.getGenero());
 
         TCareer carrera = dto.getIdCarrera() != null ? repoCareer.findById(dto.getIdCarrera()).orElse(null) : null;
         perfil.setIdCarrera(carrera);
@@ -202,23 +204,23 @@ public class BusinessUser {
         repoUserProfile.save(perfil);
 
         String idActor = "7213bed0-624b-4301-b6f7-aa5e4106f0c0";
-        String mensaje = "⭐¡Bienvenido a la plataforma, " + dto.getNombre() +" "+ dto.getApellidos()+ "✨🎉!";
+        String mensaje = "⭐¡Bienvenido a la plataforma, " + dto.getNombre() + " " + dto.getApellidos() + "✨🎉!";
         notificacionService.createNotification(
-            usuario.getIdUsuario(),
-            idActor,
-            mensaje,
-            TNotification.TipoNotificacion.BIENVENIDA,
-            null
-        );
-   
+                usuario.getIdUsuario(),
+                idActor,
+                mensaje,
+                TNotification.TipoNotificacion.BIENVENIDA,
+                null);
+
     }
 
     private String subirFotoPerfil(DtoRegisterUser dto, TUser usuario, TCareer carrera) throws Exception {
-        String nombreCarrera = (carrera != null) ? Validation.normalizarNombreCarrera(carrera.getNombre()) : "sin_carrera";
+        String nombreCarrera = (carrera != null) ? Validation.normalizarNombreCarrera(carrera.getNombre())
+                : "sin_carrera";
         String perfilPath = nombreCarrera + "/perfil/" + usuario.getIdUsuario() + "_avatar.png";
-    
+
         byte[] imagenBytes;
-    
+
         if (dto.getAvatar() != null && !dto.getAvatar().isEmpty()) {
             imagenBytes = Validation.descargarImagen(dto.getAvatar());
             if (imagenBytes == null || imagenBytes.length == 0) {
@@ -232,7 +234,7 @@ public class BusinessUser {
             String apellido = apellidos.length > 0 ? apellidos[0] : "";
             String avatarUrl = avatarUrlService + "?name="
                     + URLEncoder.encode(nombre + " " + apellido, StandardCharsets.UTF_8) + "&background=random";
-    
+
             System.out.println("Generando imagen predeterminada desde URL: " + avatarUrl);
             imagenBytes = Validation.descargarImagen(avatarUrl);
             if (imagenBytes == null || imagenBytes.length == 0) {
@@ -298,8 +300,7 @@ public class BusinessUser {
         }
 
         TUser tUser = tUsers.get();
-        tUser.setEmail(dtoUser.getEmail());
-        // Verificar si se proporciona una nueva contraseña
+
         if (dtoUser.getContrasenha() != null && !dtoUser.getContrasenha().isEmpty()) {
             String contrasenhaEncriptada = AesUtil.encrypt(dtoUser.getContrasenha());
             tUser.setContrasenha(contrasenhaEncriptada);
@@ -322,30 +323,29 @@ public class BusinessUser {
         return profiles.stream().map(this::convertToDtoUserProfile).collect(Collectors.toList());
     }
 
-
     public List<DtoUserProfile> getSuggestedUsers(String idUsuario, int count) {
         TUser currentUser = repoUser.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    
+
         // Obtener los usuarios que el usuario actual está siguiendo
         List<TUser> followingUsers = repofollowUp.findBySeguidor(currentUser)
                 .stream()
                 .map(followUp -> followUp.getSeguido())
                 .collect(Collectors.toList());
-    
+
         // Obtener los usuarios que siguen a las personas que el usuario actual sigue
         List<TUser> followersOfFollowing = followingUsers.stream()
                 .flatMap(user -> repofollowUp.findBySeguido(user).stream())
                 .map(followUp -> followUp.getSeguidor())
                 .distinct()
                 .collect(Collectors.toList());
-    
+
         // Obtener los usuarios de la misma carrera
         TUserProfile currentUserProfile = repoUserProfile.findByIdUsuario(currentUser)
                 .orElseThrow(() -> new RuntimeException("Perfil no encontrado"));
         List<TUserProfile> sameCareerUsers = repoUserProfile.findByIdCarrera(
                 currentUserProfile.getIdCarrera() != null ? currentUserProfile.getIdCarrera().getIdCarrera() : null);
-    
+
         // Combinar todas las listas y eliminar duplicados
         List<TUserProfile> combinedUsers = new ArrayList<>();
         combinedUsers.addAll(followingUsers.stream()
@@ -358,38 +358,36 @@ public class BusinessUser {
                 .collect(Collectors.toList()));
         combinedUsers.addAll(sameCareerUsers);
         combinedUsers = combinedUsers.stream().distinct().collect(Collectors.toList());
-    
+
         combinedUsers = combinedUsers.stream()
                 .filter(profile -> !profile.getIdUsuario().getIdUsuario().equals(idUsuario))
                 .collect(Collectors.toList());
-    
+
         // Si no hay suficientes usuarios sugeridos, completar con usuarios aleatorios
         if (combinedUsers.size() < count) {
             List<TUserProfile> randomUsers = repoUserProfile.findRandomUsers(count - combinedUsers.size());
             combinedUsers.addAll(randomUsers);
             combinedUsers = combinedUsers.stream().distinct().collect(Collectors.toList());
         }
-    
+
         // Seleccionar 5 usuarios aleatorios
         Collections.shuffle(combinedUsers);
         List<TUserProfile> suggestedUsers = combinedUsers.stream()
                 .limit(count)
                 .collect(Collectors.toList());
-    
+
         // Convertir a DTO
         return suggestedUsers.stream()
                 .map(this::convertToDtoUserProfile)
                 .collect(Collectors.toList());
     }
 
-
     private DtoUserProfile convertToDtoUserProfile(TUserProfile profile) {
         DtoUserProfile dto = new DtoUserProfile();
         dto.setIdPerfil(profile.getIdPerfil());
         dto.setIdUsuario(profile.getIdUsuario().getIdUsuario());
         dto.setIdCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getIdCarrera() : null);
-        dto.setNombreCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getNombre() : "Sin carrera"); // Nuevo campo
-
+        dto.setNombreCarrera(profile.getIdCarrera() != null ? profile.getIdCarrera().getNombre() : "Sin carrera");
         dto.setNombre(profile.getNombre());
         dto.setApellidos(profile.getApellidos());
         dto.setDescripcion(profile.getDescripcion());
