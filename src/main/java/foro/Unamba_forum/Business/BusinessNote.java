@@ -59,7 +59,7 @@ public class BusinessNote {
                     usuario.getIdUsuario(),
                     "ha publicado una nueva nota: " + contenido,
                     TNotification.TipoNotificacion.NOTA,
-                    note.getIdNota());
+                   usuario.getPerfil().getIdCarrera().getIdCarrera());
         }
 
         // Notificar a todos los usuarios de la carrera
@@ -71,7 +71,7 @@ public class BusinessNote {
                         usuario.getIdUsuario(),
                         "ha publicado una nueva nota en tu carrera: " + contenido,
                         TNotification.TipoNotificacion.NOTA,
-                        note.getIdNota());
+                       usuario.getPerfil().getIdCarrera().getIdCarrera());
             }
         }
 

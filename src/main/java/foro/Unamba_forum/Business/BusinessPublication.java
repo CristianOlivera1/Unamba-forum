@@ -246,15 +246,10 @@ public class BusinessPublication {
     public Page<DtoPublicationRelated> getRelatedPublications(String idPublicacion, Pageable pageable) {
         TPublication basePublication = repoPublication.findById(idPublicacion)
                 .orElseThrow(() -> new RuntimeException("Publicación no encontrada"));
-
-        // Buscar publicaciones relacionadas (misma carrera O misma categoría,
-        // excluyendo la publicación base)
-        Page<TPublication> relatedPublications = repoPublication
-                .findByCarreraIdCarreraOrCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
-                        basePublication.getCarrera().getIdCarrera(),
-                        basePublication.getCategoria().getIdCategoria(),
-                        idPublicacion,
-                        pageable);
+Page<TPublication> relatedPublications = repoPublication.findByIdPublicacionNotAndCarreraIdCarreraOrIdPublicacionNotAndCategoriaIdCategoriaOrderByFechaRegistroDesc(
+        idPublicacion, basePublication.getCarrera().getIdCarrera(),
+        idPublicacion, basePublication.getCategoria().getIdCategoria(),
+        pageable);
 
         // Convertir las publicaciones relacionadas a DTO
         return relatedPublications.map(publication -> {

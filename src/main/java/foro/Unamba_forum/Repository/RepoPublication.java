@@ -36,6 +36,6 @@ public interface RepoPublication extends JpaRepository<TPublication, String> {
   @Query("SELECT p FROM TPublication p WHERE p.usuario.idUsuario = :idUsuario ORDER BY p.fechaRegistro DESC")
   Page<TPublication> findByUsuarioIdOrderByFechaRegistroDesc(@Param("idUsuario") String idUsuario, Pageable pageable);
 
-  Page<TPublication> findByCarreraIdCarreraOrCategoriaIdCategoriaAndIdPublicacionNotOrderByFechaRegistroDesc(
-      String idCarrera, String idCategoria, String idPublicacion, Pageable pageable);
+Page<TPublication> findByIdPublicacionNotAndCarreraIdCarreraOrIdPublicacionNotAndCategoriaIdCategoriaOrderByFechaRegistroDesc(
+    String idPublicacion1, String idCarrera, String idPublicacion2, String idCategoria, Pageable pageable);
 }

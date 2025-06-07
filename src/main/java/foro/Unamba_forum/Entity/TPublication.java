@@ -36,7 +36,7 @@ public class TPublication implements Serializable  {
     @Column(name = "titulo")
     private String titulo;
 
-    @Column(name = "contenido")
+    @Column(name = "contenido" , columnDefinition = "TEXT")
     private String contenido;
 
     @Column(name = "fijada")
