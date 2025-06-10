@@ -505,4 +505,9 @@ Page<TPublication> relatedPublications = repoPublication.findByIdPublicacionNotA
         return publications.map(this::convertToDtoPublication);
     }
 
+    // Buscar publicaciones
+    public Page<DtoPublication> searchPublications(String query, Pageable pageable) {
+    Page<TPublication> results = repoPublication.searchPublications(query, pageable);
+    return results.map(this::convertToDtoPublication);
+}
 }
