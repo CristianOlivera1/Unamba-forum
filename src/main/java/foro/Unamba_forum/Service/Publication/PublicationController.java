@@ -354,4 +354,25 @@ public class PublicationController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+@GetMapping("/search")
+public ResponseEntity<ResponseGetAllPublication> searchPublications(
+        @RequestParam String query,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size) {
+    ResponseGetAllPublication response = new ResponseGetAllPublication();
+    try {
+        Page<DtoPublication> publications = businessPublication.searchPublications(
+                query, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+        response.setType("success");
+        response.setData(publications.getContent());
+        response.setListMessage(List.of("Resultados de búsqueda obtenidos correctamente"));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        response.setType("error");
+        response.setListMessage(List.of("Error al buscar publicaciones: " + e.getMessage()));
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+    
 }
