@@ -25,4 +25,6 @@ public interface RepoUserProfile extends JpaRepository<TUserProfile, String> {
     @Query("SELECT p FROM TUserProfile p WHERE p.idCarrera.idCarrera = :idCarrera")
     List<TUserProfile> findByIdCarrera(@Param("idCarrera") String idCarrera);
 
+
+
 }
