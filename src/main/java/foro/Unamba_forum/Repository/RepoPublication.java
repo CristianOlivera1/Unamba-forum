@@ -38,4 +38,15 @@ public interface RepoPublication extends JpaRepository<TPublication, String> {
 
 Page<TPublication> findByIdPublicacionNotAndCarreraIdCarreraOrIdPublicacionNotAndCategoriaIdCategoriaOrderByFechaRegistroDesc(
     String idPublicacion1, String idCarrera, String idPublicacion2, String idCategoria, Pageable pageable);
+
+        //buscador de publicaciones
+@Query("SELECT p FROM TPublication p " +
+       "JOIN p.usuario u " +
+       "JOIN u.perfil up " +
+       "JOIN p.carrera c " +
+       "WHERE LOWER(p.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
+       "   OR LOWER(p.contenido) LIKE LOWER(CONCAT('%', :query, '%')) " +
+       "   OR LOWER(up.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+       "   OR LOWER(c.nombre) LIKE LOWER(CONCAT('%', :query, '%'))")
+Page<TPublication> searchPublications(@Param("query") String query, Pageable pageable);
 }
