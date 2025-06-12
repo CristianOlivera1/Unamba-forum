@@ -359,7 +359,6 @@ Page<TPublication> relatedPublications = repoPublication.findByIdPublicacionNotA
             }
         }
 
-        // Guardar los nuevos archivos en la base de datos
         if (!nuevosArchivos.isEmpty()) {
             repoArchivo.saveAll(nuevosArchivos);
         }
@@ -509,5 +508,40 @@ Page<TPublication> relatedPublications = repoPublication.findByIdPublicacionNotA
     public Page<DtoPublication> searchPublications(String query, Pageable pageable) {
     Page<TPublication> results = repoPublication.searchPublications(query, pageable);
     return results.map(this::convertToDtoPublication);
+}
+// Publicaciones CON archivos filtradas por categoría
+public Page<DtoPublication> getPublicationsWithFilesByCategory(String idCategoria, Pageable pageable) {
+    Page<TPublication> publications = repoPublication.findPublicationsWithFilesByCategoria(idCategoria, pageable);
+    return publications.map(this::convertToDtoPublication);
+}
+
+// Publicaciones CON archivos filtradas por carrera
+public Page<DtoPublication> getPublicationsWithFilesByCareer(String idCarrera, Pageable pageable) {
+    Page<TPublication> publications = repoPublication.findPublicationsWithFilesByCareer(idCarrera, pageable);
+    return publications.map(this::convertToDtoPublication);
+}
+
+// Publicaciones CON archivos filtradas por categoría y carrera
+public Page<DtoPublication> getPublicationsWithFilesByCategoryAndCareer(String idCategoria, String idCarrera, Pageable pageable) {
+    Page<TPublication> publications = repoPublication.findPublicationsWithFilesByCategoriaAndCarrera(idCategoria, idCarrera, pageable);
+    return publications.map(this::convertToDtoPublication);
+}
+
+// Publicaciones SIN archivos filtradas por categoría
+public Page<DtoPublication> getPublicationsWithoutFilesByCategory(String idCategoria, Pageable pageable) {
+    Page<TPublication> publications = repoPublication.findPublicationsWithoutFilesByCategoria(idCategoria, pageable);
+    return publications.map(this::convertToDtoPublication);
+}
+
+// Publicaciones SIN archivos filtradas por carrera
+public Page<DtoPublication> getPublicationsWithoutFilesByCareer(String idCarrera, Pageable pageable) {
+    Page<TPublication> publications = repoPublication.findPublicationsWithoutFilesByCareer(idCarrera, pageable);
+    return publications.map(this::convertToDtoPublication);
+}
+
+// Publicaciones SIN archivos filtradas por categoría y carrera
+public Page<DtoPublication> getPublicationsWithoutFilesByCategoryAndCareer(String idCategoria, String idCarrera, Pageable pageable) {
+    Page<TPublication> publications = repoPublication.findPublicationsWithoutFilesByCategoriaAndCarrera(idCategoria, idCarrera, pageable);
+    return publications.map(this::convertToDtoPublication);
 }
 }
