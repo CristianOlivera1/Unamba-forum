@@ -36,17 +36,30 @@ public interface RepoPublication extends JpaRepository<TPublication, String> {
   @Query("SELECT p FROM TPublication p WHERE p.usuario.idUsuario = :idUsuario ORDER BY p.fechaRegistro DESC")
   Page<TPublication> findByUsuarioIdOrderByFechaRegistroDesc(@Param("idUsuario") String idUsuario, Pageable pageable);
 
-Page<TPublication> findByIdPublicacionNotAndCarreraIdCarreraOrIdPublicacionNotAndCategoriaIdCategoriaOrderByFechaRegistroDesc(
-    String idPublicacion1, String idCarrera, String idPublicacion2, String idCategoria, Pageable pageable);
+  Page<TPublication> findByIdPublicacionNotAndCarreraIdCarreraOrIdPublicacionNotAndCategoriaIdCategoriaOrderByFechaRegistroDesc(
+      String idPublicacion1, String idCarrera, String idPublicacion2, String idCategoria, Pageable pageable);
 
-        //buscador de publicaciones
-@Query("SELECT p FROM TPublication p " +
-       "JOIN p.usuario u " +
-       "JOIN u.perfil up " +
-       "JOIN p.carrera c " +
-       "WHERE LOWER(p.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
-       "   OR LOWER(p.contenido) LIKE LOWER(CONCAT('%', :query, '%')) " +
-       "   OR LOWER(up.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
-       "   OR LOWER(c.nombre) LIKE LOWER(CONCAT('%', :query, '%'))")
-Page<TPublication> searchPublications(@Param("query") String query, Pageable pageable);
+  // buscador de publicaciones
+  @Query("SELECT p FROM TPublication p " +
+      "JOIN p.usuario u " +
+      "JOIN u.perfil up " +
+      "JOIN p.carrera c " +
+      "WHERE LOWER(p.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
+      "   OR LOWER(p.contenido) LIKE LOWER(CONCAT('%', :query, '%')) " +
+      "   OR LOWER(up.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+      "   OR LOWER(c.nombre) LIKE LOWER(CONCAT('%', :query, '%'))")
+  Page<TPublication> searchPublications(@Param("query") String query, Pageable pageable);
+
+  // filtros de publicaciones
+@Query("SELECT p FROM TPublication p WHERE p.categoria.idCategoria = :idCategoria AND EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p) ORDER BY p.fijada DESC, p.fechaRegistro DESC")
+Page<TPublication> findPublicationsWithFilesByCategoria(@Param("idCategoria") String idCategoria, Pageable pageable);
+
+@Query("SELECT p FROM TPublication p WHERE p.categoria.idCategoria = :idCategoria AND p.carrera.idCarrera = :idCarrera AND EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p) ORDER BY p.fijada DESC, p.fechaRegistro DESC")
+Page<TPublication> findPublicationsWithFilesByCategoriaAndCarrera(@Param("idCategoria") String idCategoria, @Param("idCarrera") String idCarrera, Pageable pageable);
+
+@Query("SELECT p FROM TPublication p WHERE p.categoria.idCategoria = :idCategoria AND NOT EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p) ORDER BY p.fijada DESC, p.fechaRegistro DESC")
+Page<TPublication> findPublicationsWithoutFilesByCategoria(@Param("idCategoria") String idCategoria, Pageable pageable);
+
+@Query("SELECT p FROM TPublication p WHERE p.categoria.idCategoria = :idCategoria AND p.carrera.idCarrera = :idCarrera AND NOT EXISTS (SELECT f FROM TFile f WHERE f.publicacion = p) ORDER BY p.fijada DESC, p.fechaRegistro DESC")
+Page<TPublication> findPublicationsWithoutFilesByCategoriaAndCarrera(@Param("idCategoria") String idCategoria, @Param("idCarrera") String idCarrera, Pageable pageable);
 }
