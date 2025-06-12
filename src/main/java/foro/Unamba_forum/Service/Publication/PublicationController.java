@@ -276,7 +276,7 @@ public class PublicationController {
         ResponseGetAllPublication response = new ResponseGetAllPublication();
         try {
             Page<DtoPublication> publications = businessPublication.getPublicationsWithoutFilesPageable(
-                    PageRequest.of(page, 3, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
+                    PageRequest.of(page, 5, Sort.by(Sort.Direction.DESC, "fechaRegistro")));
             response.setType("success");
             response.setData(publications.getContent());
             response.setListMessage(List.of("Publicaciones sin archivos obtenidas correctamente"));
@@ -373,6 +373,39 @@ public ResponseEntity<ResponseGetAllPublication> searchPublications(
         response.setListMessage(List.of("Error al buscar publicaciones: " + e.getMessage()));
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}
+@GetMapping("/filter")
+public ResponseEntity<?> filterPublications(
+        @RequestParam(required = false) String idCategoria,
+        @RequestParam(required = false) String idCarrera,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size) {
+
+    Page<DtoPublication> withFiles;
+    Page<DtoPublication> withoutFiles;
+
+    if (idCategoria != null && idCarrera != null) {
+        withFiles = businessPublication.getPublicationsWithFilesByCategoryAndCareer(idCategoria, idCarrera, PageRequest.of(page, size));
+        withoutFiles = businessPublication.getPublicationsWithoutFilesByCategoryAndCareer(idCategoria, idCarrera, PageRequest.of(page, size));
+    } else if (idCategoria != null) {
+        withFiles = businessPublication.getPublicationsWithFilesByCategory(idCategoria, PageRequest.of(page, size));
+        withoutFiles = businessPublication.getPublicationsWithoutFilesByCategory(idCategoria, PageRequest.of(page, size));
+    } else if (idCarrera != null) {
+        withFiles = businessPublication.getPublicationsWithFilesByCareer(idCarrera, PageRequest.of(page, size));
+        withoutFiles = businessPublication.getPublicationsWithoutFilesByCareer(idCarrera, PageRequest.of(page, size));
+    } else {
+        withFiles = businessPublication.getPublicationsWithFilesPageable(PageRequest.of(page, size));
+        withoutFiles = businessPublication.getPublicationsWithoutFilesPageable(PageRequest.of(page, size));
+    }
+
+    var response = new Object() {
+        public final String type = "success";
+        public final List<DtoPublication> publicacionesConArchivos = withFiles.getContent();
+        public final List<DtoPublication> publicacionesSinArchivos = withoutFiles.getContent();
+        public final List<String> listMessage = List.of("Publicaciones filtradas correctamente");
+    };
+
+    return ResponseEntity.ok(response);
 }
     
 }
